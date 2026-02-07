@@ -1,5 +1,4 @@
 import { supabaseAdmin } from '@/lib/supabase'
-import FilterBar from '@/components/map/FilterBar'
 import CampusView from '@/components/map/CampusView'
 
 export const dynamic = 'force-dynamic'
@@ -25,7 +24,6 @@ export default async function MapPage() {
 
   return (
     <div className="min-h-screen">
-      <FilterBar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page header */}
         <div className="mb-8">

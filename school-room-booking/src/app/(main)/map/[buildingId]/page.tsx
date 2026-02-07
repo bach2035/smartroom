@@ -1,6 +1,5 @@
 import { notFound } from 'next/navigation'
 import { supabaseAdmin } from '@/lib/supabase'
-import FilterBar from '@/components/map/FilterBar'
 import Breadcrumb from '@/components/map/Breadcrumb'
 import BuildingView from '@/components/map/BuildingView'
 
@@ -43,7 +42,6 @@ export default async function BuildingPage({ params }: Props) {
 
   return (
     <div>
-      <FilterBar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Breadcrumb
           items={[

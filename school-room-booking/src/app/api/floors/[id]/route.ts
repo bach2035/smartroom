@@ -67,27 +67,27 @@ export async function GET(
 
     const typedFloor = floor as unknown as FloorData
 
-    // Get room availability if date/time filters are provided
-    let roomAvailability: Record<string, boolean> = {}
-    if (date && startTime && endTime) {
-      const startDateTime = `${date}T${startTime}:00`
-      const endDateTime = `${date}T${endTime}:00`
+    // Get room availability — use provided filters or default to today's full range
+    const roomIds = typedFloor.rooms?.map((r) => r.id) || []
+    const filterDate = date || new Date().toISOString().split('T')[0]
+    const filterStart = startTime || '08:00'
+    const filterEnd = endTime || '18:00'
+    const startDateTime = `${filterDate}T${filterStart}:00`
+    const endDateTime = `${filterDate}T${filterEnd}:00`
 
-      const roomIds = typedFloor.rooms?.map((r) => r.id) || []
+    const { data: bookings } = await supabaseAdmin
+      .from('bookings')
+      .select('room_id')
+      .in('room_id', roomIds)
+      .in('status', ['PENDING', 'APPROVED'])
+      .lt('start_time', endDateTime)
+      .gt('end_time', startDateTime)
 
-      const { data: bookings } = await supabaseAdmin
-        .from('bookings')
-        .select('room_id')
-        .in('room_id', roomIds)
-        .in('status', ['PENDING', 'APPROVED'])
-        .lt('start_time', endDateTime)
-        .gt('end_time', startDateTime)
-
-      const bookedRoomIds = new Set(bookings?.map((b) => b.room_id) || [])
-      typedFloor.rooms?.forEach((room) => {
-        roomAvailability[room.id] = bookedRoomIds.has(room.id)
-      })
-    }
+    const bookedRoomIds = new Set(bookings?.map((b) => b.room_id) || [])
+    const roomAvailability: Record<string, boolean> = {}
+    typedFloor.rooms?.forEach((room) => {
+      roomAvailability[room.id] = bookedRoomIds.has(room.id)
+    })
 
     return NextResponse.json({
       id: typedFloor.id,
