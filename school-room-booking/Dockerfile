@@ -1,10 +1,10 @@
-FROM node:20-alpine AS base
+FROM oven/bun:1 AS base
 
 # Stage 1: Install dependencies
 FROM base AS deps
 WORKDIR /app
-COPY package.json package-lock.json* bun.lock* ./
-RUN npm install --frozen-lockfile || npm install
+COPY package.json bun.lock* ./
+RUN bun install --frozen-lockfile || bun install
 
 # Stage 2: Build the app
 FROM base AS builder
@@ -12,9 +12,18 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ARG SUPABASE_SERVICE_ROLE_KEY
+ARG NEXTAUTH_SECRET
+
+ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+ENV SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY
+ENV NEXTAUTH_SECRET=$NEXTAUTH_SECRET
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN npm run build
+RUN bun run build
 
 # Stage 3: Production runner
 FROM base AS runner
@@ -36,4 +45,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "server.js"]
+CMD ["bun", "server.js"]
