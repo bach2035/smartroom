@@ -89,13 +89,13 @@ export default function FloorPlan({ svgPath, rooms }: FloorPlanProps) {
       const roomElement = svgElement.querySelector(`[data-room-id="${room.svgElementId}"]`) as SVGElement | null
       if (!roomElement) return
 
-      // Set colors
+      // Set colors via style (inline style overrides SVG class CSS)
       if (selectedRoomId === room.roomId) {
-        roomElement.setAttribute('fill', '#3B82F6')
+        roomElement.style.fill = '#3B82F6'
       } else if (room.isBooked) {
-        roomElement.setAttribute('fill', '#EF4444')
+        roomElement.style.fill = '#EF4444'
       } else {
-        roomElement.setAttribute('fill', '#D1D5DB')
+        roomElement.style.fill = '#D1D5DB'
       }
 
       roomElement.style.cursor = 'pointer'
