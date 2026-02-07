@@ -77,16 +77,23 @@ export async function GET(
 
     const { data: bookings } = await supabaseAdmin
       .from('bookings')
-      .select('room_id')
+      .select('room_id, title, start_time, end_time, status, user:users(full_name)')
       .in('room_id', roomIds)
       .in('status', ['PENDING', 'APPROVED'])
       .lt('start_time', endDateTime)
       .gt('end_time', startDateTime)
 
-    const bookedRoomIds = new Set(bookings?.map((b) => b.room_id) || [])
-    const roomAvailability: Record<string, boolean> = {}
-    typedFloor.rooms?.forEach((room) => {
-      roomAvailability[room.id] = bookedRoomIds.has(room.id)
+    const roomBookings: Record<string, { title: string; startTime: string; endTime: string; status: string; userName: string }[]> = {}
+    bookings?.forEach((b) => {
+      if (!roomBookings[b.room_id]) roomBookings[b.room_id] = []
+      const user = b.user as unknown as { full_name: string } | null
+      roomBookings[b.room_id].push({
+        title: b.title,
+        startTime: b.start_time,
+        endTime: b.end_time,
+        status: b.status,
+        userName: user?.full_name || 'Unknown',
+      })
     })
 
     return NextResponse.json({
@@ -102,7 +109,8 @@ export async function GET(
         capacity: room.capacity,
         description: room.description,
         svgElementId: room.svg_element_id,
-        isBooked: roomAvailability[room.id] || false,
+        isBooked: (roomBookings[room.id]?.length || 0) > 0,
+        bookings: roomBookings[room.id] || [],
         equipment: room.room_equipment?.map((re) => ({
           id: re.equipment.id,
           name: re.equipment.name,

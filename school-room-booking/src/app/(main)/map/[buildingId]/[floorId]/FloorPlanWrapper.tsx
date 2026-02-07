@@ -12,6 +12,21 @@ interface Room {
   svgElementId: string
 }
 
+interface RoomBooking {
+  title: string
+  startTime: string
+  endTime: string
+  status: string
+  userName: string
+}
+
+interface RoomAvailability {
+  roomId: string
+  svgElementId: string
+  isBooked: boolean
+  bookings: RoomBooking[]
+}
+
 interface FloorPlanWrapperProps {
   floorId: string
   svgPath: string
@@ -20,7 +35,7 @@ interface FloorPlanWrapperProps {
 
 export default function FloorPlanWrapper({ floorId, svgPath, rooms }: FloorPlanWrapperProps) {
   const { selectedDate, startTime, endTime } = useMapStore()
-  const [availability, setAvailability] = useState<{ roomId: string; isBooked: boolean }[]>([])
+  const [availability, setAvailability] = useState<RoomAvailability[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -32,10 +47,13 @@ export default function FloorPlanWrapper({ floorId, svgPath, rooms }: FloorPlanW
         )
         if (res.ok) {
           const data = await res.json()
+          const svgMap = Object.fromEntries(rooms.map((r) => [r.id, r.svgElementId]))
           setAvailability(
-            data.rooms.map((r: { id: string; isBooked: boolean }) => ({
+            data.rooms.map((r: { id: string; isBooked: boolean; bookings: RoomBooking[] }) => ({
               roomId: r.id,
+              svgElementId: svgMap[r.id] || '',
               isBooked: r.isBooked,
+              bookings: r.bookings || [],
             }))
           )
         }
@@ -47,7 +65,7 @@ export default function FloorPlanWrapper({ floorId, svgPath, rooms }: FloorPlanW
     }
 
     fetchAvailability()
-  }, [floorId, selectedDate, startTime, endTime])
+  }, [floorId, selectedDate, startTime, endTime, rooms])
 
   if (loading) {
     return (

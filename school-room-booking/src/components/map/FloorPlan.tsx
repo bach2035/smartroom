@@ -1,34 +1,80 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useMapStore } from '@/store/mapStore'
+
+interface RoomBooking {
+  title: string
+  startTime: string
+  endTime: string
+  status: string
+  userName: string
+}
 
 interface RoomAvailability {
   roomId: string
+  svgElementId: string
   isBooked: boolean
+  bookings: RoomBooking[]
 }
 
 interface FloorPlanProps {
   svgPath: string
   rooms: RoomAvailability[]
-  onRoomClick?: (roomId: string) => void
 }
 
-export default function FloorPlan({ svgPath, rooms, onRoomClick }: FloorPlanProps) {
+interface PopupState {
+  roomId: string
+  svgElementId: string
+  bookings: RoomBooking[]
+  x: number
+  y: number
+}
+
+function formatTime(dateStr: string) {
+  return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
+function formatDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString([], { month: 'short', day: 'numeric' })
+}
+
+export default function FloorPlan({ svgPath, rooms }: FloorPlanProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [svgContent, setSvgContent] = useState<string>('')
-  const router = useRouter()
   const { selectedRoomId, setSelectedRoomId } = useMapStore()
+  const [popup, setPopup] = useState<PopupState | null>(null)
 
   useEffect(() => {
     fetch(svgPath)
       .then((res) => res.text())
-      .then((content) => {
-        setSvgContent(content)
-      })
+      .then((content) => setSvgContent(content))
       .catch((err) => console.error('Error loading SVG:', err))
   }, [svgPath])
+
+  const handleRoomClick = useCallback((room: RoomAvailability, event: MouseEvent) => {
+    const container = containerRef.current
+    if (!container) return
+
+    const rect = container.getBoundingClientRect()
+    const x = event.clientX - rect.left
+    const y = event.clientY - rect.top
+
+    setSelectedRoomId(room.roomId)
+
+    if (room.isBooked && room.bookings.length > 0) {
+      setPopup({
+        roomId: room.roomId,
+        svgElementId: room.svgElementId,
+        bookings: room.bookings,
+        x,
+        y,
+      })
+    } else {
+      setPopup(null)
+      window.location.href = `/room/${room.roomId}`
+    }
+  }, [setSelectedRoomId])
 
   useEffect(() => {
     if (!containerRef.current || !svgContent) return
@@ -37,51 +83,112 @@ export default function FloorPlan({ svgPath, rooms, onRoomClick }: FloorPlanProp
     const svgElement = container.querySelector('svg')
     if (!svgElement) return
 
-    // Update room colors based on availability
-    rooms.forEach(({ roomId, isBooked }) => {
-      const roomElement = svgElement.querySelector(`[data-room-id="${roomId}"]`) as SVGElement | null
-      if (roomElement) {
-        if (selectedRoomId === roomId) {
-          roomElement.setAttribute('fill', '#3B82F6') // Blue for selected
-        } else if (isBooked) {
-          roomElement.setAttribute('fill', '#EF4444') // Red for booked
-        } else {
-          roomElement.setAttribute('fill', '#D1D5DB') // Gray for available
-        }
+    const handlers: { el: SVGElement; handler: (e: MouseEvent) => void }[] = []
 
-        // Add click handler
-        roomElement.style.cursor = 'pointer'
-        const handleClick = () => {
-          setSelectedRoomId(roomId)
-          if (onRoomClick) {
-            onRoomClick(roomId)
-          } else {
-            router.push(`/room/${roomId}`)
-          }
-        }
+    rooms.forEach((room) => {
+      const roomElement = svgElement.querySelector(`[data-room-id="${room.svgElementId}"]`) as SVGElement | null
+      if (!roomElement) return
 
-        roomElement.removeEventListener('click', handleClick)
-        roomElement.addEventListener('click', handleClick)
+      // Set colors
+      if (selectedRoomId === room.roomId) {
+        roomElement.setAttribute('fill', '#3B82F6')
+      } else if (room.isBooked) {
+        roomElement.setAttribute('fill', '#EF4444')
+      } else {
+        roomElement.setAttribute('fill', '#D1D5DB')
       }
+
+      roomElement.style.cursor = 'pointer'
+
+      const handler = (e: MouseEvent) => handleRoomClick(room, e)
+      roomElement.addEventListener('click', handler)
+      handlers.push({ el: roomElement, handler })
     })
 
     return () => {
-      rooms.forEach(({ roomId }) => {
-        const roomElement = svgElement.querySelector(`[data-room-id="${roomId}"]`)
-        if (roomElement) {
-          roomElement.replaceWith(roomElement.cloneNode(true))
-        }
+      handlers.forEach(({ el, handler }) => {
+        el.removeEventListener('click', handler)
       })
     }
-  }, [svgContent, rooms, selectedRoomId, setSelectedRoomId, onRoomClick, router])
+  }, [svgContent, rooms, selectedRoomId, handleRoomClick])
+
+  // Close popup when clicking outside
+  useEffect(() => {
+    if (!popup) return
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      if (!target.closest('.room-popup') && !target.closest('[data-room-id]')) {
+        setPopup(null)
+        setSelectedRoomId(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [popup, setSelectedRoomId])
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 overflow-auto">
+    <div className="bg-white rounded-lg shadow-md p-4 overflow-auto relative">
       <div
         ref={containerRef}
         className="min-h-[400px] flex items-center justify-center"
         dangerouslySetInnerHTML={{ __html: svgContent }}
       />
+
+      {/* Booking popup */}
+      {popup && (
+        <div
+          className="room-popup absolute z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-4 w-72"
+          style={{
+            left: Math.min(popup.x, (containerRef.current?.offsetWidth || 400) - 300),
+            top: popup.y + 10,
+          }}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="font-semibold text-slate-800 text-sm">
+              Bookings for {popup.svgElementId.replace('room-', '').toUpperCase()}
+            </h4>
+            <button
+              onClick={() => { setPopup(null); setSelectedRoomId(null) }}
+              className="text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            {popup.bookings.map((booking, i) => (
+              <div key={i} className="p-2.5 bg-red-50 border border-red-100 rounded-lg">
+                <p className="font-medium text-slate-800 text-sm">{booking.title}</p>
+                <p className="text-xs text-slate-500 mt-0.5">by {booking.userName}</p>
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  <svg className="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-xs font-medium text-red-600">
+                    {formatDate(booking.startTime)} {formatTime(booking.startTime)} - {formatTime(booking.endTime)}
+                  </span>
+                </div>
+                <span className={`inline-block mt-1.5 text-xs px-1.5 py-0.5 rounded font-medium ${
+                  booking.status === 'APPROVED'
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-yellow-100 text-yellow-700'
+                }`}>
+                  {booking.status}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <a
+            href={`/room/${popup.roomId}`}
+            className="mt-3 block text-center text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
+          >
+            View room details &rarr;
+          </a>
+        </div>
+      )}
     </div>
   )
 }
