@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <!-- Floor A1 - Ground Floor -->
+  <defs>
+    <style>
+      .room { fill: #D1D5DB; stroke: #374151; stroke-width: 2; cursor: pointer; }
+      .room:hover { fill: #9CA3AF; }
+      .corridor { fill: #F3F4F6; stroke: #9CA3AF; stroke-width: 1; }
+      .label { font-family: Arial, sans-serif; font-size: 12px; fill: #374151; pointer-events: none; }
+    </style>
+  </defs>
+
+  <!-- Building outline -->
+  <rect x="50" y="50" width="700" height="500" fill="none" stroke="#1F2937" stroke-width="3"/>
+
+  <!-- Main corridor -->
+  <rect class="corridor" x="50" y="250" width="700" height="100"/>
+
+  <!-- Room A101 - Large Lecture Hall -->
+  <rect class="room" data-room-id="room-a101" x="60" y="60" width="200" height="180"/>
+  <text class="label" x="160" y="150" text-anchor="middle">A101</text>
+  <text class="label" x="160" y="170" text-anchor="middle">Lecture Hall</text>
+
+  <!-- Room A102 - Classroom -->
+  <rect class="room" data-room-id="room-a102" x="270" y="60" width="150" height="180"/>
+  <text class="label" x="345" y="150" text-anchor="middle">A102</text>
+  <text class="label" x="345" y="170" text-anchor="middle">Classroom</text>
+
+  <!-- Room A103 - Classroom -->
+  <rect class="room" data-room-id="room-a103" x="430" y="60" width="150" height="180"/>
+  <text class="label" x="505" y="150" text-anchor="middle">A103</text>
+  <text class="label" x="505" y="170" text-anchor="middle">Classroom</text>
+
+  <!-- Room A104 - Meeting Room -->
+  <rect class="room" data-room-id="room-a104" x="590" y="60" width="150" height="180"/>
+  <text class="label" x="665" y="150" text-anchor="middle">A104</text>
+  <text class="label" x="665" y="170" text-anchor="middle">Meeting Room</text>
+
+  <!-- Room A105 - Computer Lab -->
+  <rect class="room" data-room-id="room-a105" x="60" y="360" width="200" height="180"/>
+  <text class="label" x="160" y="450" text-anchor="middle">A105</text>
+  <text class="label" x="160" y="470" text-anchor="middle">Computer Lab</text>
+
+  <!-- Room A106 - Study Room -->
+  <rect class="room" data-room-id="room-a106" x="270" y="360" width="150" height="180"/>
+  <text class="label" x="345" y="450" text-anchor="middle">A106</text>
+  <text class="label" x="345" y="470" text-anchor="middle">Study Room</text>
+</svg>
