@@ -67,21 +67,20 @@ export async function GET(
 
     const typedFloor = floor as unknown as FloorData
 
-    // Get room availability — use provided filters or default to today's full range
+    // Get all bookings for the entire selected date (not just the time filter window)
+    // so the map always shows booked rooms as red
     const roomIds = typedFloor.rooms?.map((r) => r.id) || []
     const filterDate = date || new Date().toISOString().split('T')[0]
-    const filterStart = startTime || '08:00'
-    const filterEnd = endTime || '18:00'
-    const startDateTime = `${filterDate}T${filterStart}:00`
-    const endDateTime = `${filterDate}T${filterEnd}:00`
+    const dayStart = `${filterDate}T00:00:00`
+    const dayEnd = `${filterDate}T23:59:59`
 
     const { data: bookings } = await supabaseAdmin
       .from('bookings')
       .select('room_id, title, start_time, end_time, status, user:users(full_name)')
       .in('room_id', roomIds)
       .in('status', ['PENDING', 'APPROVED'])
-      .lt('start_time', endDateTime)
-      .gt('end_time', startDateTime)
+      .lt('start_time', dayEnd)
+      .gt('end_time', dayStart)
 
     const roomBookings: Record<string, { title: string; startTime: string; endTime: string; status: string; userName: string }[]> = {}
     bookings?.forEach((b) => {
