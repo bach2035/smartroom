@@ -67,20 +67,25 @@ export async function GET(
 
     const typedFloor = floor as unknown as FloorData
 
-    // Get all bookings for the entire selected date (not just the time filter window)
-    // so the map always shows booked rooms as red
+    // Get all bookings for the entire selected date
     const roomIds = typedFloor.rooms?.map((r) => r.id) || []
     const filterDate = date || new Date().toISOString().split('T')[0]
-    const dayStart = `${filterDate}T00:00:00`
-    const dayEnd = `${filterDate}T23:59:59`
 
-    const { data: bookings } = await supabaseAdmin
+    // Use gte/lte with date boundaries to catch all bookings that overlap with this day
+    const dayStart = `${filterDate}T00:00:00.000Z`
+    const dayEnd = `${filterDate}T23:59:59.999Z`
+
+    const { data: bookings, error: bookingsError } = await supabaseAdmin
       .from('bookings')
       .select('room_id, title, start_time, end_time, status, user:users(full_name)')
       .in('room_id', roomIds)
       .in('status', ['PENDING', 'APPROVED'])
-      .lt('start_time', dayEnd)
-      .gt('end_time', dayStart)
+      .lte('start_time', dayEnd)
+      .gte('end_time', dayStart)
+
+    if (bookingsError) {
+      console.error('Error fetching bookings:', bookingsError)
+    }
 
     const roomBookings: Record<string, { title: string; startTime: string; endTime: string; status: string; userName: string }[]> = {}
     bookings?.forEach((b) => {

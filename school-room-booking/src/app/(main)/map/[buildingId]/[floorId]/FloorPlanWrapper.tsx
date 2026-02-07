@@ -47,11 +47,10 @@ export default function FloorPlanWrapper({ floorId, svgPath, rooms }: FloorPlanW
         )
         if (res.ok) {
           const data = await res.json()
-          const svgMap = Object.fromEntries(rooms.map((r) => [r.id, r.svgElementId]))
           setAvailability(
-            data.rooms.map((r: { id: string; isBooked: boolean; bookings: RoomBooking[] }) => ({
+            data.rooms.map((r: { id: string; svgElementId: string; isBooked: boolean; bookings: RoomBooking[] }) => ({
               roomId: r.id,
-              svgElementId: svgMap[r.id] || '',
+              svgElementId: r.svgElementId,
               isBooked: r.isBooked,
               bookings: r.bookings || [],
             }))
