@@ -42,8 +42,11 @@ export default function FloorPlanWrapper({ floorId, svgPath, rooms }: FloorPlanW
     const fetchAvailability = async () => {
       setLoading(true)
       try {
+        // Build timezone-aware ISO strings so the API compares correctly
+        const rangeStart = new Date(`${selectedDate}T${startTime}:00`).toISOString()
+        const rangeEnd = new Date(`${selectedDate}T${endTime}:00`).toISOString()
         const res = await fetch(
-          `/api/floors/${floorId}?date=${selectedDate}&startTime=${startTime}&endTime=${endTime}`
+          `/api/floors/${floorId}?rangeStart=${encodeURIComponent(rangeStart)}&rangeEnd=${encodeURIComponent(rangeEnd)}`
         )
         if (res.ok) {
           const data = await res.json()

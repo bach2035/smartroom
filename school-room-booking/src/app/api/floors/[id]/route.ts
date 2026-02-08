@@ -32,9 +32,8 @@ export async function GET(
   try {
     const { id } = await params
     const { searchParams } = new URL(request.url)
-    const date = searchParams.get('date')
-    const startTime = searchParams.get('startTime')
-    const endTime = searchParams.get('endTime')
+    const rangeStart = searchParams.get('rangeStart')
+    const rangeEnd = searchParams.get('rangeEnd')
 
     const { data: floor, error } = await supabaseAdmin
       .from('floors')
@@ -69,19 +68,21 @@ export async function GET(
 
     // Get bookings that overlap with the selected time window
     const roomIds = typedFloor.rooms?.map((r) => r.id) || []
-    const filterDate = date || new Date().toISOString().split('T')[0]
-    const filterStart = startTime || '08:00'
-    const filterEnd = endTime || '18:00'
-    const rangeStart = `${filterDate}T${filterStart}:00`
-    const rangeEnd = `${filterDate}T${filterEnd}:00`
+
+    // rangeStart/rangeEnd are full ISO strings with timezone from the client
+    const now = new Date()
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0).toISOString()
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 18, 0, 0).toISOString()
+    const filterStart = rangeStart || todayStart
+    const filterEnd = rangeEnd || todayEnd
 
     const { data: bookings, error: bookingsError } = await supabaseAdmin
       .from('bookings')
       .select('room_id, title, start_time, end_time, status, users!bookings_user_id_fkey(full_name)')
       .in('room_id', roomIds)
       .in('status', ['PENDING', 'APPROVED'])
-      .lt('start_time', rangeEnd)
-      .gt('end_time', rangeStart)
+      .lt('start_time', filterEnd)
+      .gt('end_time', filterStart)
 
     if (bookingsError) {
       console.error('Error fetching bookings:', bookingsError)
