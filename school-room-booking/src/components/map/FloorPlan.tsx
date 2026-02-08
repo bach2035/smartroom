@@ -31,12 +31,14 @@ interface PopupState {
   y: number
 }
 
-function formatTime(dateStr: string) {
-  return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-}
-
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString([], { month: 'short', day: 'numeric' })
+function formatDateTime(dateStr: string) {
+  const d = new Date(dateStr)
+  const dd = String(d.getDate()).padStart(2, '0')
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const yyyy = d.getFullYear()
+  const hh = String(d.getHours()).padStart(2, '0')
+  const min = String(d.getMinutes()).padStart(2, '0')
+  return { date: `${dd}/${mm}/${yyyy}`, time: `${hh}:${min}` }
 }
 
 export default function FloorPlan({ svgPath, rooms }: FloorPlanProps) {
@@ -167,7 +169,7 @@ export default function FloorPlan({ svgPath, rooms }: FloorPlanProps) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <span className="text-xs font-medium text-red-600">
-                    {formatDate(booking.startTime)} {formatTime(booking.startTime)} - {formatTime(booking.endTime)}
+                    {formatDateTime(booking.startTime).date} {formatDateTime(booking.startTime).time} - {formatDateTime(booking.endTime).time}
                   </span>
                 </div>
                 <span className={`inline-block mt-1.5 text-xs px-1.5 py-0.5 rounded font-medium ${

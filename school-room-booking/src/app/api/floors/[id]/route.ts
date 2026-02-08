@@ -67,21 +67,21 @@ export async function GET(
 
     const typedFloor = floor as unknown as FloorData
 
-    // Get all bookings for the entire selected date
+    // Get bookings that overlap with the selected time window
     const roomIds = typedFloor.rooms?.map((r) => r.id) || []
     const filterDate = date || new Date().toISOString().split('T')[0]
-
-    // Use gte/lte with date boundaries to catch all bookings that overlap with this day
-    const dayStart = `${filterDate}T00:00:00.000Z`
-    const dayEnd = `${filterDate}T23:59:59.999Z`
+    const filterStart = startTime || '08:00'
+    const filterEnd = endTime || '18:00'
+    const rangeStart = `${filterDate}T${filterStart}:00`
+    const rangeEnd = `${filterDate}T${filterEnd}:00`
 
     const { data: bookings, error: bookingsError } = await supabaseAdmin
       .from('bookings')
       .select('room_id, title, start_time, end_time, status, users!bookings_user_id_fkey(full_name)')
       .in('room_id', roomIds)
       .in('status', ['PENDING', 'APPROVED'])
-      .lte('start_time', dayEnd)
-      .gte('end_time', dayStart)
+      .lt('start_time', rangeEnd)
+      .gt('end_time', rangeStart)
 
     if (bookingsError) {
       console.error('Error fetching bookings:', bookingsError)
