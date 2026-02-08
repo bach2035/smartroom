@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { useMapStore } from '@/store/mapStore'
 import DatePicker from '@/components/ui/DatePicker'
 import AvailabilityTimeline from '@/components/room/AvailabilityTimeline'
 import BookingForm from '@/components/room/BookingForm'
@@ -26,8 +26,11 @@ interface RoomBookingClientProps {
 
 export default function RoomBookingClient({ roomId }: RoomBookingClientProps) {
   const { data: session, status } = useSession()
-  const mapDate = useMapStore((s) => s.selectedDate)
-  const [selectedDate, setSelectedDate] = useState(mapDate)
+  const searchParams = useSearchParams()
+  const dateFromUrl = searchParams.get('date')
+  const [selectedDate, setSelectedDate] = useState(
+    dateFromUrl || new Date().toISOString().split('T')[0]
+  )
   const [slots, setSlots] = useState<TimeSlot[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedStart, setSelectedStart] = useState<string | null>(null)

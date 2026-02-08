@@ -44,7 +44,7 @@ function formatDateTime(dateStr: string) {
 export default function FloorPlan({ svgPath, rooms }: FloorPlanProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [svgContent, setSvgContent] = useState<string>('')
-  const { selectedRoomId, setSelectedRoomId } = useMapStore()
+  const { selectedDate, selectedRoomId, setSelectedRoomId } = useMapStore()
   const [popup, setPopup] = useState<PopupState | null>(null)
 
   useEffect(() => {
@@ -74,9 +74,9 @@ export default function FloorPlan({ svgPath, rooms }: FloorPlanProps) {
       })
     } else {
       setPopup(null)
-      window.location.href = `/room/${room.roomId}`
+      window.location.href = `/room/${room.roomId}?date=${selectedDate}`
     }
-  }, [setSelectedRoomId])
+  }, [setSelectedRoomId, selectedDate])
 
   useEffect(() => {
     if (!containerRef.current || !svgContent) return
@@ -184,7 +184,7 @@ export default function FloorPlan({ svgPath, rooms }: FloorPlanProps) {
           </div>
 
           <a
-            href={`/room/${popup.roomId}`}
+            href={`/room/${popup.roomId}?date=${selectedDate}`}
             className="mt-3 block text-center text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
           >
             View room details &rarr;

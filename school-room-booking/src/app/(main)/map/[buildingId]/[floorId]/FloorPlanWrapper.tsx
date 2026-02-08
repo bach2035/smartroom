@@ -90,7 +90,7 @@ export default function FloorPlanWrapper({ floorId, svgPath, rooms }: FloorPlanW
             return (
               <a
                 key={room.id}
-                href={`/room/${room.id}`}
+                href={`/room/${room.id}?date=${selectedDate}`}
                 className="block p-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
               >
                 <div className="flex items-center justify-between">
