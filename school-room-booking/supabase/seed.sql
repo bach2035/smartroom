@@ -163,25 +163,25 @@ SELECT r.id, e.id, 1 FROM rooms r, equipment e WHERE r.room_number = 'B106' AND 
 INSERT INTO room_equipment (room_id, equipment_id, quantity)
 SELECT r.id, e.id, 10 FROM rooms r, equipment e WHERE r.room_number = 'B106' AND e.name = 'Computer';
 
--- Seed Sample Bookings
+-- Seed Sample Bookings (times are rounded to 30-min slots)
 INSERT INTO bookings (title, description, start_time, end_time, status, user_id, room_id)
 SELECT 'Study Group Session', 'Weekly study group for Math 101',
-       NOW() + INTERVAL '1 day' + INTERVAL '10 hours',
-       NOW() + INTERVAL '1 day' + INTERVAL '12 hours',
+       (CURRENT_DATE + INTERVAL '1 day' + INTERVAL '10 hours')::timestamptz,
+       (CURRENT_DATE + INTERVAL '1 day' + INTERVAL '12 hours')::timestamptz,
        'PENDING', u.id, r.id
 FROM users u, rooms r WHERE u.username = 'john.doe' AND r.room_number = 'A106';
 
 INSERT INTO bookings (title, description, start_time, end_time, status, user_id, room_id, approved_by, approved_at)
 SELECT 'Project Presentation', 'Final project presentation for CS 301',
-       NOW() + INTERVAL '1 day' + INTERVAL '14 hours',
-       NOW() + INTERVAL '1 day' + INTERVAL '16 hours',
+       (CURRENT_DATE + INTERVAL '1 day' + INTERVAL '14 hours')::timestamptz,
+       (CURRENT_DATE + INTERVAL '1 day' + INTERVAL '16 hours')::timestamptz,
        'APPROVED', u.id, r.id, admin.id, NOW()
 FROM users u, rooms r, users admin
 WHERE u.username = 'john.doe' AND r.room_number = 'A102' AND admin.username = 'admin';
 
 INSERT INTO bookings (title, description, start_time, end_time, status, user_id, room_id)
 SELECT 'Club Meeting', 'Photography club weekly meeting',
-       NOW() + INTERVAL '1 day' + INTERVAL '15 hours',
-       NOW() + INTERVAL '1 day' + INTERVAL '17 hours',
+       (CURRENT_DATE + INTERVAL '1 day' + INTERVAL '15 hours')::timestamptz,
+       (CURRENT_DATE + INTERVAL '1 day' + INTERVAL '17 hours')::timestamptz,
        'PENDING', u.id, r.id
 FROM users u, rooms r WHERE u.username = 'jane.smith' AND r.room_number = 'B105';
