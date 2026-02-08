@@ -77,7 +77,7 @@ export async function GET(
 
     const { data: bookings, error: bookingsError } = await supabaseAdmin
       .from('bookings')
-      .select('room_id, title, start_time, end_time, status, user:users(full_name)')
+      .select('room_id, title, start_time, end_time, status, users!bookings_user_id_fkey(full_name)')
       .in('room_id', roomIds)
       .in('status', ['PENDING', 'APPROVED'])
       .lte('start_time', dayEnd)
@@ -90,7 +90,7 @@ export async function GET(
     const roomBookings: Record<string, { title: string; startTime: string; endTime: string; status: string; userName: string }[]> = {}
     bookings?.forEach((b) => {
       if (!roomBookings[b.room_id]) roomBookings[b.room_id] = []
-      const user = b.user as unknown as { full_name: string } | null
+      const user = (b as Record<string, unknown>).users as { full_name: string } | null
       roomBookings[b.room_id].push({
         title: b.title,
         startTime: b.start_time,
