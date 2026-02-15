@@ -13,14 +13,14 @@ export default function Header() {
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
       {/* Top accent bar */}
-      <div className="h-1 bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500" />
+      <div className="h-1 bg-gradient-to-r from-red-700 via-red-500 to-cyan-500" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo and brand */}
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-700 to-red-800 flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
@@ -38,7 +38,7 @@ export default function Header() {
                   href="/map"
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                     isActive('/map')
-                      ? 'bg-blue-50 text-blue-700'
+                      ? 'bg-red-50 text-red-800'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                   }`}
                 >
@@ -46,30 +46,49 @@ export default function Header() {
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                     </svg>
-                    Map
+                    Book
                   </span>
                 </Link>
-                <Link
-                  href="/bookings"
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    isActive('/bookings')
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    My Bookings
-                  </span>
-                </Link>
+                {session.user.role !== 'ADMIN' && (
+                  <>
+                    <Link
+                      href="/bookings"
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        isActive('/bookings')
+                          ? 'bg-red-50 text-red-800'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        My Bookings
+                      </span>
+                    </Link>
+                    <Link
+                      href="/reports"
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        isActive('/reports')
+                          ? 'bg-red-50 text-red-800'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                        My Reports
+                      </span>
+                    </Link>
+                  </>
+                )}
                 {session.user.role === 'ADMIN' && (
                   <Link
                     href="/admin"
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                       isActive('/admin')
-                        ? 'bg-blue-50 text-blue-700'
+                        ? 'bg-red-50 text-red-800'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                     }`}
                   >
@@ -89,11 +108,11 @@ export default function Header() {
           {/* User section */}
           <div className="flex items-center gap-4">
             {status === 'loading' ? (
-              <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+              <div className="w-8 h-8 border-2 border-red-700 border-t-transparent rounded-full animate-spin" />
             ) : session ? (
               <div className="flex items-center gap-4">
-                <div className="hidden sm:flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium text-sm shadow-sm">
+                <Link href="/profile" className="hidden sm:flex items-center gap-3 hover:opacity-80 transition-opacity">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center text-white font-medium text-sm shadow-sm">
                     {session.user.name?.charAt(0).toUpperCase() || 'U'}
                   </div>
                   <div className="flex flex-col">
@@ -104,7 +123,7 @@ export default function Header() {
                       {session.user.role === 'ADMIN' ? 'Administrator' : 'Student'}
                     </span>
                   </div>
-                </div>
+                </Link>
                 <button
                   onClick={() => signOut({ callbackUrl: '/login' })}
                   className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-all"
@@ -125,7 +144,7 @@ export default function Header() {
                 </Link>
                 <Link
                   href="/register"
-                  className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all"
+                  className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-red-700 to-red-800 rounded-lg hover:from-red-800 hover:to-red-900 shadow-sm hover:shadow-md transition-all"
                 >
                   Register
                 </Link>
