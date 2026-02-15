@@ -33,8 +33,8 @@ export default function BuildingView({ buildingId, buildingName, floors }: Build
                   <h3 className="text-lg font-semibold text-gray-900">{floor.name}</h3>
                   <p className="text-sm text-gray-500">Level {floor.level}</p>
                 </div>
-                <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full">
-                  <span className="text-xl font-bold text-blue-600">{floor.level}</span>
+                <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full">
+                  <span className="text-xl font-bold text-red-700">{floor.level}</span>
                 </div>
               </div>
               <p className="text-sm text-gray-600 mt-3">

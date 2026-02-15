@@ -33,7 +33,7 @@ const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(
           className={`block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-1 ${
             error
               ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-              : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+              : 'border-gray-300 focus:ring-red-500 focus:border-red-500'
           }`}
         />
         {error && <p className="mt-1 text-sm text-red-600">{error}</p>}

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
+import { sendBookingRejectedEmail } from '@/lib/email'
 
 export async function PATCH(
   request: NextRequest,
@@ -48,6 +49,23 @@ export async function PATCH(
       .single()
 
     if (error) throw error
+
+    // Fire-and-forget: notify student of rejection
+    Promise.all([
+      supabaseAdmin.from('users').select('email, full_name').eq('id', booking.user_id).single(),
+      supabaseAdmin.from('rooms').select('name, room_number').eq('id', booking.room_id).single(),
+    ]).then(([{ data: student }, { data: room }]) => {
+      if (student && room) {
+        sendBookingRejectedEmail(student.email, {
+          bookingTitle: booking.title,
+          roomName: room.name,
+          roomNumber: room.room_number,
+          startTime: booking.start_time,
+          endTime: booking.end_time,
+          studentName: student.full_name,
+        }, reason)
+      }
+    })
 
     return NextResponse.json({
       message: 'Booking rejected',

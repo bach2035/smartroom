@@ -4,81 +4,123 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-School Room Booking System - a web-based platform for students to browse interactive navigation maps of their school, view room availability in real time, and submit booking requests requiring admin approval.
+School Room Booking System — students browse interactive SVG maps of their school, view room availability in real time, and submit booking requests requiring admin approval.
 
 ## Tech Stack
 
-- **Framework:** Next.js (App Router, full-stack)
-- **Language:** TypeScript
-- **Styling:** Tailwind CSS
-- **Database:** PostgreSQL via Prisma ORM
-- **Auth:** NextAuth.js with Credentials provider (username/password, JWT strategy)
-- **State:** React Context / Zustand (client-side)
-- **Deployment:** Vercel (recommended)
+- **Framework:** Next.js 16 (App Router, full-stack)
+- **Language:** TypeScript (strict mode)
+- **Styling:** Tailwind CSS 4
+- **Database:** Supabase (hosted PostgreSQL) — NOT Prisma
+- **Auth:** NextAuth.js v4 with Credentials provider, JWT strategy (30-day sessions)
+- **State:** Zustand (single store for map filter state)
+- **Package manager:** Bun (lockfile: `bun.lock`)
+
+## Project Root
+
+The Next.js application lives in `school-room-booking/` — all source code, configs, and commands run from there.
 
 ## Build & Development Commands
 
 ```bash
-# Install dependencies
-npm install
+cd school-room-booking
 
-# Run development server
-npm run dev
+bun dev              # Dev server at localhost:3000
+bun run build        # Production build
+bun run lint         # ESLint (flat config, ESLint 9)
+bun run db:seed      # Seed database
+```
 
-# Build for production
-npm run build
+No test runner is configured.
 
-# Run production server
-npm start
+## Environment Variables
 
-# Database operations
-npx prisma generate      # Generate Prisma client
-npx prisma migrate dev   # Run migrations in development
-npx prisma migrate deploy # Run migrations in production
-npx prisma studio        # Open Prisma Studio GUI
+Required in `school-room-booking/.env`:
+
+```
+NEXT_PUBLIC_SUPABASE_URL       # Supabase project URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY  # Public anon key (client-side)
+SUPABASE_SERVICE_ROLE_KEY      # Service role key (server-side only)
+NEXTAUTH_SECRET                # JWT signing secret
+NEXTAUTH_URL                   # App URL (http://localhost:3000 for dev)
 ```
 
 ## Architecture
 
-### Data Model Hierarchy
+### Data Model
 
 ```
-Campus
-├── Building (has SVG for campus-level view)
-│   └── Floor (has SVG floor plan)
-│       └── Room (has svgElementId linking to floor plan element)
-│           └── Booking (with PENDING/APPROVED/REJECTED/CANCELLED status)
+Building
+└── Floor (has SVG floor plan at svg_path)
+    └── Room (svg_element_id links to SVG element with data-room-id)
+        ├── RoomEquipment → Equipment
+        └── Booking (PENDING → APPROVED/REJECTED/CANCELLED)
 ```
 
-### User Roles
+Database types are defined inline in `src/lib/supabase.ts` (no Prisma schema).
 
-- **STUDENT:** Browse maps, submit booking requests, view own bookings
-- **ADMIN:** All student permissions + approve/reject bookings, manage rooms
+### Route Groups & Auth
 
-### Page Routes
+Three Next.js route groups with different auth requirements:
 
-- `/map` - Main interactive map view (campus → building → floor)
-- `/map/[buildingId]` - Building floor selector
-- `/map/[buildingId]/[floorId]` - Floor plan with clickable rooms
-- `/room/[roomId]` - Room detail + availability timeline + booking form
-- `/bookings` - Student's booking history
-- `/admin/pending` - Admin pending requests queue
-- `/admin/bookings` - All bookings view
-- `/admin/rooms` - Room management CRUD
+| Group | Routes | Access |
+|-------|--------|--------|
+| `(auth)` | `/login`, `/register` | Unauthenticated only |
+| `(main)` | `/map/**`, `/room/**`, `/bookings` | Authenticated users |
+| `(admin)` | `/admin/**` | ADMIN role only |
 
-### Key Implementation Details
+Middleware (`src/middleware.ts`) enforces auth via NextAuth `withAuth`. Admin routes redirect non-admins to `/map`.
 
-**SVG Maps:** Each room is an `<svg>` polygon/rect element with a unique `room-id` data attribute. Room availability state drives fill color:
-- Available: `#D1D5DB` (light grey)
-- Booked: `#EF4444` (red)
-- Selected: `#3B82F6` (blue)
-- Maintenance: `#6B7280` (dark grey)
+### Server vs Client Component Pattern
 
-**Booking Conflicts:** Use database transaction with row-level locking when creating bookings to prevent double-booking. Return HTTP 409 on conflict.
+Server components fetch data from Supabase, then pass it to client wrapper components:
+- `map/[buildingId]/[floorId]/page.tsx` (server) → `FloorPlanWrapper.tsx` (client)
+- `room/[roomId]/page.tsx` (server) → `RoomBookingClient.tsx` (client)
 
-**Time Slots:** 30-minute increments. Filter state persists across building/floor navigation.
+### API Routes (`src/app/api/`)
 
-**Security:**
-- Passwords hashed with bcrypt (salt rounds = 12)
-- Admin routes require `role === 'ADMIN'` check
-- Rate limiting on auth endpoints (5 attempts/minute)
+**User APIs:**
+- `POST /api/bookings` — Create booking (returns 409 on time conflict)
+- `GET /api/bookings/me` — User's bookings
+- `PATCH /api/bookings/[id]/cancel` — Cancel own booking
+- `GET /api/rooms/[id]/availability` — 30-min time slots for a date (7:00–22:00)
+- `GET /api/buildings`, `GET /api/buildings/[id]/floors`, `GET /api/floors/[id]`
+
+**Admin APIs:**
+- `PATCH /api/admin/bookings/[id]/approve` — Approve with `approved_by` + timestamp
+- `PATCH /api/admin/bookings/[id]/reject` — Reject with `reject_reason`
+- `GET/POST/PATCH/DELETE /api/admin/rooms` — Room CRUD
+
+All admin APIs check `session.user.role === 'ADMIN'`.
+
+### SVG Map System
+
+Each floor has an SVG file. Room elements use `data-room-id` attributes matching the `svg_element_id` column. `FloorPlan.tsx` dynamically loads the SVG and sets fill colors based on booking status:
+- `#D1D5DB` — Available (grey)
+- `#EF4444` — Booked (red)
+- `#3B82F6` — Selected (blue)
+- `#6B7280` — Maintenance (dark grey)
+
+Clicking an available room navigates to `/room/[roomId]?date=YYYY-MM-DD`.
+
+### Zustand Store (`src/store/mapStore.ts`)
+
+Single store holding: `selectedDate`, `startTime`, `endTime`, `selectedRoomId`. Filter state persists across building/floor navigation. Default time range: 08:00–18:00.
+
+### Import Alias
+
+`@/*` maps to `./src/*` (configured in tsconfig.json).
+
+### Supabase Client Usage
+
+- `src/lib/supabase.ts` exports two clients:
+  - Anonymous client (uses `NEXT_PUBLIC_SUPABASE_ANON_KEY`) — limited access
+  - Admin/service client (uses `SUPABASE_SERVICE_ROLE_KEY`) — full access, server-side only
+
+### Booking Conflict Detection
+
+`POST /api/bookings` queries for overlapping bookings with PENDING or APPROVED status before inserting. Not an atomic transaction — sufficient for expected concurrency levels.
+
+### Time Slots
+
+30-minute increments. Time inputs use `step={1800}`. Availability endpoint generates slots from 7:00 to 22:00. Filter bar and booking form should always use rounded 30-min boundaries.

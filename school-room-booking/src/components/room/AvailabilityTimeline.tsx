@@ -56,7 +56,7 @@ export default function AvailabilityTimeline({
                 p-2 text-xs rounded transition-colors
                 ${
                   selected
-                    ? 'bg-blue-500 text-white'
+                    ? 'bg-red-500 text-white'
                     : slot.isAvailable
                     ? 'bg-green-100 hover:bg-green-200 text-green-700'
                     : 'bg-red-100 text-red-700 cursor-not-allowed'

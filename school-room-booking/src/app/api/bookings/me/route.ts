@@ -51,7 +51,7 @@ export async function GET() {
         )
       `)
       .eq('user_id', session.user.id)
-      .order('start_time', { ascending: false })
+      .order('created_at', { ascending: false })
 
     if (error) throw error
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
+import { getTodayString } from '@/lib/utils'
 import Link from 'next/link'
 import DatePicker from '@/components/ui/DatePicker'
 import AvailabilityTimeline from '@/components/room/AvailabilityTimeline'
@@ -29,7 +30,7 @@ export default function RoomBookingClient({ roomId }: RoomBookingClientProps) {
   const searchParams = useSearchParams()
   const dateFromUrl = searchParams.get('date')
   const [selectedDate, setSelectedDate] = useState(
-    dateFromUrl || new Date().toISOString().split('T')[0]
+    dateFromUrl || getTodayString()
   )
   const [slots, setSlots] = useState<TimeSlot[]>([])
   const [loading, setLoading] = useState(true)
@@ -93,22 +94,22 @@ export default function RoomBookingClient({ roomId }: RoomBookingClientProps) {
     }
   }
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = getTodayString()
 
   return (
-    <div className="mt-8 bg-white rounded-lg shadow-md p-6">
+    <div className="bg-white rounded-2xl border border-slate-200 p-6">
       <h2 className="text-xl font-semibold text-gray-900 mb-4">Book This Room</h2>
 
       {status === 'loading' ? (
         <div className="flex items-center justify-center py-8">
-          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-red-700 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : !session ? (
         <div className="text-center py-8">
           <p className="text-gray-600 mb-4">Please sign in to book this room.</p>
           <Link
             href="/login"
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            className="px-4 py-2 bg-red-700 text-white rounded-md hover:bg-red-800"
           >
             Sign In
           </Link>
@@ -125,11 +126,16 @@ export default function RoomBookingClient({ roomId }: RoomBookingClientProps) {
 
           <div>
             <h3 className="text-sm font-medium text-gray-700 mb-2">
-              Availability on {selectedDate}
+              Availability on {(() => {
+                const d = new Date(selectedDate + 'T12:00:00+07:00')
+                const weekday = d.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'Asia/Bangkok' })
+                const parts = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Bangkok' }).format(d)
+                return `${weekday}, ${parts}`
+              })()}
             </h3>
             {loading ? (
               <div className="flex items-center justify-center py-8">
-                <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                <div className="w-6 h-6 border-2 border-red-700 border-t-transparent rounded-full animate-spin" />
               </div>
             ) : (
               <>
@@ -145,8 +151,6 @@ export default function RoomBookingClient({ roomId }: RoomBookingClientProps) {
               </>
             )}
           </div>
-
-          <hr />
 
           <BookingForm
             roomId={roomId}

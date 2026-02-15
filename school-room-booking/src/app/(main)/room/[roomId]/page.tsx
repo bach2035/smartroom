@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation'
 import { supabaseAdmin } from '@/lib/supabase'
 import Breadcrumb from '@/components/map/Breadcrumb'
 import EquipmentList from '@/components/room/EquipmentList'
+import BookingGuideInfo from '@/components/bookings/BookingGuideInfo'
+import ApprovalTimeline from '@/components/bookings/ApprovalTimeline'
 import RoomBookingClient from './RoomBookingClient'
 
 export const dynamic = 'force-dynamic'
@@ -67,6 +69,36 @@ export default async function RoomPage({ params }: Props) {
     quantity: re.quantity,
   })) || []
 
+  // Fetch room booking guide
+  const { data: guide } = await supabaseAdmin
+    .from('room_booking_guides')
+    .select('*')
+    .eq('room_id', roomId)
+    .single()
+
+  const guideData = guide ? {
+    instructions: guide.instructions as string | null,
+    contactName: guide.contact_name as string | null,
+    contactEmail: guide.contact_email as string | null,
+    contactPhone: guide.contact_phone as string | null,
+    approvalSteps: (guide.approval_steps || []) as { order: number; title: string; description: string; type: 'approval' | 'cc'; members: { name: string }[] }[],
+    documentUrl: guide.document_url as string | null,
+    documentName: guide.document_name as string | null,
+  } : null
+
+  // Fetch admin users as fallback contact info
+  const { data: admins } = await supabaseAdmin
+    .from('users')
+    .select('full_name, email, phone')
+    .eq('role', 'ADMIN')
+    .order('created_at', { ascending: true })
+    .limit(3)
+
+  const adminContacts = (admins || []) as { full_name: string; email: string; phone: string | null }[]
+
+  // Use guide contact if available, otherwise fall back to admin users
+  const hasGuideContact = guideData && (guideData.contactName || guideData.contactEmail || guideData.contactPhone)
+
   return (
     <div className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -84,7 +116,7 @@ export default async function RoomPage({ params }: Props) {
             {/* Room header card */}
             <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
               {/* Header with gradient */}
-              <div className="h-32 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 relative">
+              <div className="h-32 bg-gradient-to-br from-red-500 via-red-700 to-red-800 relative">
                 <div className="absolute inset-0 opacity-10">
                   <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
                     <defs>
@@ -99,7 +131,7 @@ export default async function RoomPage({ params }: Props) {
                   <div className="flex items-end justify-between">
                     <div>
                       <h1 className="text-2xl font-bold text-white">{roomData.name}</h1>
-                      <p className="text-blue-100 mt-1">Room {roomData.room_number}</p>
+                      <p className="text-red-100 mt-1">Room {roomData.room_number}</p>
                     </div>
                     <div className="flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur rounded-xl">
                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -119,8 +151,8 @@ export default async function RoomPage({ params }: Props) {
 
                 <div className="flex flex-wrap gap-4">
                   <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 rounded-xl">
-                    <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                       </svg>
                     </div>
@@ -147,6 +179,20 @@ export default async function RoomPage({ params }: Props) {
               </div>
             </div>
 
+            {/* Guide & Instructions */}
+            {guideData && guideData.approvalSteps.length > 0 && (
+              <ApprovalTimeline steps={guideData.approvalSteps} bookingStatus="" />
+            )}
+
+            <BookingGuideInfo
+              instructions={guideData?.instructions ?? null}
+              contactName={guideData?.contactName ?? null}
+              contactEmail={guideData?.contactEmail ?? null}
+              contactPhone={guideData?.contactPhone ?? null}
+              documentUrl={guideData?.documentUrl ?? null}
+              documentName={guideData?.documentName ?? null}
+            />
+
             {/* Booking section */}
             <RoomBookingClient roomId={roomData.id} />
           </div>
@@ -155,7 +201,7 @@ export default async function RoomPage({ params }: Props) {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl border border-slate-200 p-6 sticky top-24">
               <h3 className="font-semibold text-slate-800 mb-6 flex items-center gap-2">
-                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 Room Information
@@ -181,10 +227,67 @@ export default async function RoomPage({ params }: Props) {
                 )}
               </dl>
 
+              {/* Manager Contact */}
+              <div className="mt-6 p-4 bg-slate-50 rounded-xl">
+                <h4 className="text-sm font-medium text-slate-800 mb-3 flex items-center gap-2">
+                  <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  {hasGuideContact ? 'Room Manager' : 'Contact Admin'}
+                </h4>
+                {hasGuideContact ? (
+                  <div className="space-y-2">
+                    {guideData!.contactName && (
+                      <p className="text-sm font-medium text-slate-700">{guideData!.contactName}</p>
+                    )}
+                    {guideData!.contactEmail && (
+                      <a href={`mailto:${guideData!.contactEmail}`} className="flex items-center gap-2 text-sm text-red-700 hover:text-red-900 transition-colors">
+                        <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        {guideData!.contactEmail}
+                      </a>
+                    )}
+                    {guideData!.contactPhone && (
+                      <a href={`tel:${guideData!.contactPhone}`} className="flex items-center gap-2 text-sm text-red-700 hover:text-red-900 transition-colors">
+                        <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                        {guideData!.contactPhone}
+                      </a>
+                    )}
+                  </div>
+                ) : adminContacts.length > 0 ? (
+                  <div className="space-y-3">
+                    {adminContacts.map((admin, i) => (
+                      <div key={i} className={i > 0 ? 'pt-3 border-t border-slate-200' : ''}>
+                        <p className="text-sm font-medium text-slate-700">{admin.full_name}</p>
+                        <a href={`mailto:${admin.email}`} className="flex items-center gap-2 text-sm text-red-700 hover:text-red-900 transition-colors mt-1">
+                          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                          {admin.email}
+                        </a>
+                        {admin.phone && (
+                          <a href={`tel:${admin.phone}`} className="flex items-center gap-2 text-sm text-red-700 hover:text-red-900 transition-colors mt-1">
+                            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                            </svg>
+                            {admin.phone}
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-500">No contact information available</p>
+                )}
+              </div>
+
               {/* Quick tips */}
-              <div className="mt-6 p-4 bg-blue-50 rounded-xl">
-                <h4 className="text-sm font-medium text-blue-800 mb-2">Booking Tips</h4>
-                <ul className="text-sm text-blue-600 space-y-1">
+              <div className="mt-6 p-4 bg-red-50 rounded-xl">
+                <h4 className="text-sm font-medium text-red-900 mb-2">Booking Tips</h4>
+                <ul className="text-sm text-red-700 space-y-1">
                   <li>Select your preferred time slot below</li>
                   <li>Bookings require admin approval</li>
                   <li>Check your bookings page for status</li>

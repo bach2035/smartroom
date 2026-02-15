@@ -53,7 +53,7 @@ export default function RegisterForm() {
       {/* Mobile logo */}
       <div className="lg:hidden text-center mb-8">
         <div className="inline-flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-lg">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-700 to-red-800 flex items-center justify-center shadow-lg">
             <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
@@ -66,8 +66,8 @@ export default function RegisterForm() {
       {/* Form card */}
       <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 p-8 border border-slate-100">
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-slate-800">Create Account</h2>
-          <p className="text-slate-500 mt-2">Register to start booking rooms</p>
+          <h2 className="text-2xl font-bold text-slate-800">Student Registration</h2>
+          <p className="text-slate-500 mt-2">Create a student account to start booking rooms</p>
         </div>
 
         {error && (
@@ -100,7 +100,7 @@ export default function RegisterForm() {
                 name="fullName"
                 type="text"
                 required
-                className="w-full pl-12 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-slate-50 hover:bg-white"
+                className="w-full pl-12 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all bg-slate-50 hover:bg-white"
                 placeholder="Enter your full name"
               />
             </div>
@@ -122,7 +122,7 @@ export default function RegisterForm() {
                 type="text"
                 required
                 pattern="[a-zA-Z0-9_]{3,20}"
-                className="w-full pl-12 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-slate-50 hover:bg-white"
+                className="w-full pl-12 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all bg-slate-50 hover:bg-white"
                 placeholder="Choose a username"
               />
             </div>
@@ -144,7 +144,7 @@ export default function RegisterForm() {
                 name="email"
                 type="email"
                 required
-                className="w-full pl-12 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-slate-50 hover:bg-white"
+                className="w-full pl-12 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all bg-slate-50 hover:bg-white"
                 placeholder="Enter your email"
               />
             </div>
@@ -166,7 +166,7 @@ export default function RegisterForm() {
                 type="password"
                 required
                 minLength={8}
-                className="w-full pl-12 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-slate-50 hover:bg-white"
+                className="w-full pl-12 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all bg-slate-50 hover:bg-white"
                 placeholder="Create a password"
               />
             </div>
@@ -189,7 +189,7 @@ export default function RegisterForm() {
                 type="password"
                 required
                 minLength={8}
-                className="w-full pl-12 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-slate-50 hover:bg-white"
+                className="w-full pl-12 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all bg-slate-50 hover:bg-white"
                 placeholder="Confirm your password"
               />
             </div>
@@ -198,7 +198,7 @@ export default function RegisterForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 px-4 mt-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-xl hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30"
+            className="w-full py-3.5 px-4 mt-2 bg-gradient-to-r from-red-700 to-red-800 text-white font-medium rounded-xl hover:from-red-800 hover:to-red-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
@@ -217,7 +217,7 @@ export default function RegisterForm() {
         <div className="mt-6 pt-6 border-t border-slate-100 text-center">
           <p className="text-slate-500">
             Already have an account?{' '}
-            <Link href="/login" className="text-blue-600 hover:text-blue-700 font-medium transition-colors">
+            <Link href="/login" className="text-red-700 hover:text-red-800 font-medium transition-colors">
               Sign in here
             </Link>
           </p>

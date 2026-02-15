@@ -13,6 +13,8 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
 // Types for database
 export type UserRole = 'STUDENT' | 'ADMIN'
 export type BookingStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED'
+export type ReportStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED'
+export type ReportCategory = 'EQUIPMENT_MALFUNCTION' | 'DEVICE_MISSING' | 'FURNITURE_DAMAGE' | 'CLEANLINESS' | 'OTHER'
 
 export interface User {
   id: string
@@ -20,6 +22,7 @@ export interface User {
   email: string
   password: string
   full_name: string
+  phone: string | null
   role: UserRole
   created_at: string
   updated_at: string
@@ -97,4 +100,60 @@ export interface Booking {
   user?: User
   room?: Room
   approver?: User
+}
+
+export interface ApprovalStepMember {
+  name: string
+  role?: string
+}
+
+export interface ApprovalStep {
+  order: number
+  title: string
+  description: string
+  type: 'approval' | 'cc'
+  members: ApprovalStepMember[]
+}
+
+export interface RoomBookingGuide {
+  id: string
+  room_id: string
+  instructions: string | null
+  contact_name: string | null
+  contact_email: string | null
+  contact_phone: string | null
+  approval_steps: ApprovalStep[]
+  document_url: string | null
+  document_name: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface BookingAttachment {
+  id: string
+  booking_id: string
+  file_name: string
+  file_path: string
+  file_size: number
+  mime_type: string | null
+  uploaded_by: string
+  created_at: string
+}
+
+export interface Report {
+  id: string
+  title: string
+  description: string | null
+  category: ReportCategory
+  status: ReportStatus
+  user_id: string
+  room_id: string
+  resolved_by: string | null
+  resolved_at: string | null
+  admin_notes: string | null
+  created_at: string
+  updated_at: string
+  user?: User
+  room?: Room
+  resolver?: User
 }

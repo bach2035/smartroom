@@ -79,3 +79,41 @@ export interface RoomAvailability {
   roomId: string
   isBooked: boolean
 }
+
+export interface ApprovalStepMember {
+  name: string
+  role?: string
+}
+
+export interface ApprovalStep {
+  order: number
+  title: string
+  description: string
+  type: 'approval' | 'cc'
+  members: ApprovalStepMember[]
+}
+
+export interface RoomBookingGuide {
+  id: string
+  roomId: string
+  instructions: string | null
+  contactName: string | null
+  contactEmail: string | null
+  contactPhone: string | null
+  approvalSteps: ApprovalStep[]
+  documentUrl: string | null
+  documentName: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface BookingAttachment {
+  id: string
+  bookingId: string
+  fileName: string
+  filePath: string
+  fileSize: number
+  mimeType: string | null
+  uploadedBy: string
+  createdAt: string
+}

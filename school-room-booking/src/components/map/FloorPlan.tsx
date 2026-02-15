@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { useMapStore } from '@/store/mapStore'
 
 interface RoomBooking {
+  id: string
   title: string
   startTime: string
   endTime: string
@@ -21,6 +22,8 @@ interface RoomAvailability {
 interface FloorPlanProps {
   svgPath: string
   rooms: RoomAvailability[]
+  isAdmin?: boolean
+  onAdminRoomSelect?: (room: RoomAvailability) => void
 }
 
 interface PopupState {
@@ -33,15 +36,13 @@ interface PopupState {
 
 function formatDateTime(dateStr: string) {
   const d = new Date(dateStr)
-  const dd = String(d.getDate()).padStart(2, '0')
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const yyyy = d.getFullYear()
-  const hh = String(d.getHours()).padStart(2, '0')
-  const min = String(d.getMinutes()).padStart(2, '0')
-  return { date: `${dd}/${mm}/${yyyy}`, time: `${hh}:${min}` }
+  const weekday = d.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'Asia/Bangkok' })
+  const parts = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Bangkok' }).format(d)
+  const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Bangkok' })
+  return { date: `${weekday}, ${parts}`, time }
 }
 
-export default function FloorPlan({ svgPath, rooms }: FloorPlanProps) {
+export default function FloorPlan({ svgPath, rooms, isAdmin, onAdminRoomSelect }: FloorPlanProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [svgContent, setSvgContent] = useState<string>('')
   const { selectedDate, selectedRoomId, setSelectedRoomId } = useMapStore()
@@ -58,11 +59,17 @@ export default function FloorPlan({ svgPath, rooms }: FloorPlanProps) {
     const container = containerRef.current
     if (!container) return
 
+    setSelectedRoomId(room.roomId)
+
+    if (isAdmin && onAdminRoomSelect) {
+      setPopup(null)
+      onAdminRoomSelect(room)
+      return
+    }
+
     const rect = container.getBoundingClientRect()
     const x = event.clientX - rect.left
     const y = event.clientY - rect.top
-
-    setSelectedRoomId(room.roomId)
 
     if (room.isBooked && room.bookings.length > 0) {
       setPopup({
@@ -76,7 +83,7 @@ export default function FloorPlan({ svgPath, rooms }: FloorPlanProps) {
       setPopup(null)
       window.location.href = `/room/${room.roomId}?date=${selectedDate}`
     }
-  }, [setSelectedRoomId, selectedDate])
+  }, [setSelectedRoomId, selectedDate, isAdmin, onAdminRoomSelect])
 
   useEffect(() => {
     if (!containerRef.current || !svgContent) return
@@ -93,7 +100,7 @@ export default function FloorPlan({ svgPath, rooms }: FloorPlanProps) {
 
       // Set colors via style (inline style overrides SVG class CSS)
       if (selectedRoomId === room.roomId) {
-        roomElement.style.fill = '#3B82F6'
+        roomElement.style.fill = '#b11a1e'
       } else if (room.isBooked) {
         roomElement.style.fill = '#EF4444'
       } else {
@@ -185,7 +192,7 @@ export default function FloorPlan({ svgPath, rooms }: FloorPlanProps) {
 
           <a
             href={`/room/${popup.roomId}?date=${selectedDate}`}
-            className="mt-3 block text-center text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
+            className="mt-3 block text-center text-xs font-medium text-red-700 hover:text-red-900 transition-colors"
           >
             View room details &rarr;
           </a>

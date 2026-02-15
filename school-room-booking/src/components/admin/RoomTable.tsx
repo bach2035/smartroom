@@ -5,6 +5,7 @@ import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import Badge from '@/components/ui/Badge'
 import Input from '@/components/ui/Input'
+import RoomGuideEditor from '@/components/admin/RoomGuideEditor'
 
 interface Room {
   id: string
@@ -24,6 +25,9 @@ export default function RoomTable() {
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [showGuideModal, setShowGuideModal] = useState(false)
+  const [guideRoomId, setGuideRoomId] = useState('')
+  const [guideRoomName, setGuideRoomName] = useState('')
   const [editForm, setEditForm] = useState({
     name: '',
     roomNumber: '',
@@ -114,7 +118,7 @@ export default function RoomTable() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-red-700 border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
@@ -179,6 +183,17 @@ export default function RoomTable() {
                         Edit
                       </Button>
                       <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setGuideRoomId(room.id)
+                          setGuideRoomName(`${room.roomNumber} - ${room.name}`)
+                          setShowGuideModal(true)
+                        }}
+                      >
+                        Guide
+                      </Button>
+                      <Button
                         variant={room.isActive ? 'secondary' : 'primary'}
                         size="sm"
                         onClick={() => handleToggleActive(room)}
@@ -239,7 +254,7 @@ export default function RoomTable() {
                 setEditForm({ ...editForm, description: e.target.value })
               }
               rows={3}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-red-500"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -250,7 +265,7 @@ export default function RoomTable() {
               onChange={(e) =>
                 setEditForm({ ...editForm, isActive: e.target.checked })
               }
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              className="h-4 w-4 text-red-700 focus:ring-red-500 border-gray-300 rounded"
             />
             <label htmlFor="isActive" className="text-sm text-gray-700">
               Active
@@ -272,6 +287,17 @@ export default function RoomTable() {
           </Button>
         </div>
       </Modal>
+
+      <RoomGuideEditor
+        isOpen={showGuideModal}
+        onClose={() => {
+          setShowGuideModal(false)
+          setGuideRoomId('')
+          setGuideRoomName('')
+        }}
+        roomId={guideRoomId}
+        roomName={guideRoomName}
+      />
     </>
   )
 }

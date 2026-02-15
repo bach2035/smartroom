@@ -3,9 +3,9 @@
 :root {
   --background: #f5f7fa;
   --foreground: #1a1a2e;
-  --primary: #1e88e5;
-  --primary-dark: #1565c0;
-  --primary-light: #e3f2fd;
+  --primary: #b11a1e;
+  --primary-dark: #8b1518;
+  --primary-light: #fef2f2;
   --secondary: #64748b;
   --success: #22c55e;
   --warning: #f59e0b;
@@ -84,14 +84,14 @@ body {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #1e88e5 0%, #1565c0 100%);
+  background: linear-gradient(135deg, #b11a1e 0%, #8b1518 100%);
   color: white;
-  box-shadow: 0 2px 4px rgba(30, 136, 229, 0.3);
+  box-shadow: 0 2px 4px rgba(177, 26, 30, 0.3);
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
-  box-shadow: 0 4px 8px rgba(30, 136, 229, 0.4);
+  background: linear-gradient(135deg, #8b1518 0%, #6b1012 100%);
+  box-shadow: 0 4px 8px rgba(177, 26, 30, 0.4);
   transform: translateY(-1px);
 }
 
@@ -133,7 +133,7 @@ body {
 
 .form-input:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.1);
+  box-shadow: 0 0 0 3px rgba(177, 26, 30, 0.1);
   outline: none;
 }
 
@@ -248,8 +248,8 @@ body {
 }
 
 .room-selected {
-  fill: #1e88e5;
-  stroke: #1565c0;
+  fill: #b11a1e;
+  stroke: #8b1518;
 }
 
 .room-maintenance {

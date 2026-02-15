@@ -1,11 +1,12 @@
 'use client'
 
 import { useMapStore } from '@/store/mapStore'
+import { getTodayString } from '@/lib/utils'
 
 export default function FilterBar() {
   const { selectedDate, startTime, endTime, setSelectedDate, setStartTime, setEndTime, resetFilters } = useMapStore()
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = getTodayString()
 
   return (
     <div className="bg-white border-b border-slate-200 shadow-sm">
@@ -20,7 +21,7 @@ export default function FilterBar() {
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
                 min={today}
-                className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50 hover:bg-white transition-colors"
+                className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 bg-slate-50 hover:bg-white transition-colors"
               />
             </div>
 
@@ -33,7 +34,7 @@ export default function FilterBar() {
                 min="07:00"
                 max="21:00"
                 step={1800}
-                className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50 hover:bg-white transition-colors"
+                className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 bg-slate-50 hover:bg-white transition-colors"
               />
             </div>
 
@@ -46,7 +47,7 @@ export default function FilterBar() {
                 min={startTime}
                 max="22:00"
                 step={1800}
-                className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50 hover:bg-white transition-colors"
+                className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 bg-slate-50 hover:bg-white transition-colors"
               />
             </div>
 
@@ -74,7 +75,7 @@ export default function FilterBar() {
                 <span className="text-sm text-slate-600">Booked</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50" />
+                <div className="w-3 h-3 rounded-full bg-red-500 shadow-sm shadow-red-500/50" />
                 <span className="text-sm text-slate-600">Selected</span>
               </div>
             </div>

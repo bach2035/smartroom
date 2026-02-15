@@ -91,11 +91,10 @@ export default function PendingQueue() {
   }
 
   const formatDate = (isoString: string) => {
-    return new Date(isoString).toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    })
+    const d = new Date(isoString)
+    const weekday = d.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'Asia/Bangkok' })
+    const parts = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Bangkok' }).format(d)
+    return `${weekday}, ${parts}`
   }
 
   const formatTime = (isoString: string) => {
@@ -103,13 +102,14 @@ export default function PendingQueue() {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false,
+      timeZone: 'Asia/Bangkok',
     })
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-red-700 border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
@@ -149,7 +149,7 @@ export default function PendingQueue() {
                   <h3 className="text-lg font-semibold text-gray-900">
                     {booking.title}
                   </h3>
-                  <StatusBadge status={booking.status} />
+                  <StatusBadge status={booking.status} startTime={booking.startTime} />
                 </div>
 
                 <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-600">
@@ -164,6 +164,9 @@ export default function PendingQueue() {
                   </p>
                   <p>
                     <strong>Time:</strong> {formatTime(booking.startTime)} - {formatTime(booking.endTime)}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    Submitted {formatDate(booking.createdAt)} at {formatTime(booking.createdAt)}
                   </p>
                 </div>
 
@@ -217,7 +220,7 @@ export default function PendingQueue() {
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
             rows={3}
-            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-red-500"
             placeholder="Enter reason for rejection..."
           />
         </div>

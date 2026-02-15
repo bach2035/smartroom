@@ -70,15 +70,16 @@ export async function GET(
     const roomIds = typedFloor.rooms?.map((r) => r.id) || []
 
     // rangeStart/rangeEnd are full ISO strings with timezone from the client
-    const now = new Date()
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0).toISOString()
-    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 18, 0, 0).toISOString()
+    // Default to today 08:00–18:00 in GMT+7
+    const todayGMT7 = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date())
+    const todayStart = new Date(`${todayGMT7}T08:00:00+07:00`).toISOString()
+    const todayEnd = new Date(`${todayGMT7}T18:00:00+07:00`).toISOString()
     const filterStart = rangeStart || todayStart
     const filterEnd = rangeEnd || todayEnd
 
     const { data: bookings, error: bookingsError } = await supabaseAdmin
       .from('bookings')
-      .select('room_id, title, start_time, end_time, status, users!bookings_user_id_fkey(full_name)')
+      .select('id, room_id, title, start_time, end_time, status, users!bookings_user_id_fkey(full_name)')
       .in('room_id', roomIds)
       .in('status', ['PENDING', 'APPROVED'])
       .lt('start_time', filterEnd)
@@ -88,11 +89,12 @@ export async function GET(
       console.error('Error fetching bookings:', bookingsError)
     }
 
-    const roomBookings: Record<string, { title: string; startTime: string; endTime: string; status: string; userName: string }[]> = {}
+    const roomBookings: Record<string, { id: string; title: string; startTime: string; endTime: string; status: string; userName: string }[]> = {}
     bookings?.forEach((b) => {
       if (!roomBookings[b.room_id]) roomBookings[b.room_id] = []
       const user = (b as Record<string, unknown>).users as { full_name: string } | null
       roomBookings[b.room_id].push({
+        id: b.id,
         title: b.title,
         startTime: b.start_time,
         endTime: b.end_time,

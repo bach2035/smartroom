@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
+import { sendBookingRequestEmail } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   try {
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
       .from('bookings')
       .select('id')
       .eq('room_id', roomId)
-      .in('status', ['PENDING', 'APPROVED'])
+      .eq('status', 'APPROVED')
       .lt('start_time', end.toISOString())
       .gt('end_time', start.toISOString())
 
@@ -93,6 +94,28 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
+
+    // Fire-and-forget: notify admins of new booking request
+    const roomData = booking.room as unknown as { name: string; room_number: string }
+    supabaseAdmin
+      .from('users')
+      .select('email')
+      .eq('role', 'ADMIN')
+      .then(({ data: admins }) => {
+        if (admins && admins.length > 0) {
+          sendBookingRequestEmail(
+            admins.map((a) => a.email),
+            {
+              bookingTitle: booking.title,
+              roomName: roomData.name,
+              roomNumber: roomData.room_number,
+              startTime: booking.start_time,
+              endTime: booking.end_time,
+              studentName: session.user.name || session.user.username || 'Unknown',
+            }
+          )
+        }
+      })
 
     return NextResponse.json(
       {

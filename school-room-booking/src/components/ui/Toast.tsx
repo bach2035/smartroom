@@ -24,7 +24,7 @@ export default function Toast({ message, type = 'info', duration = 3000, onClose
   const types = {
     success: 'bg-green-500',
     error: 'bg-red-500',
-    info: 'bg-blue-500',
+    info: 'bg-red-500',
     warning: 'bg-yellow-500',
   }
 

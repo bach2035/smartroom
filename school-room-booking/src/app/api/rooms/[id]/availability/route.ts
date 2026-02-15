@@ -26,8 +26,8 @@ export async function GET(
       )
     }
 
-    const startOfDay = `${date}T00:00:00`
-    const endOfDay = `${date}T23:59:59`
+    const startOfDay = new Date(`${date}T00:00:00+07:00`).toISOString()
+    const endOfDay = new Date(`${date}T23:59:59+07:00`).toISOString()
 
     const { data: bookings } = await supabaseAdmin
       .from('bookings')
@@ -40,7 +40,7 @@ export async function GET(
         user:users!bookings_user_id_fkey(full_name)
       `)
       .eq('room_id', id)
-      .in('status', ['PENDING', 'APPROVED'])
+      .eq('status', 'APPROVED')
       .gte('start_time', startOfDay)
       .lte('end_time', endOfDay)
       .order('start_time')
@@ -51,7 +51,7 @@ export async function GET(
     const slots = []
     for (let hour = 7; hour < 22; hour++) {
       for (let minute = 0; minute < 60; minute += 30) {
-        const slotStart = new Date(`${date}T${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:00`)
+        const slotStart = new Date(`${date}T${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:00+07:00`)
         const slotEnd = new Date(slotStart.getTime() + 30 * 60 * 1000)
 
         const booking = typedBookings?.find(
