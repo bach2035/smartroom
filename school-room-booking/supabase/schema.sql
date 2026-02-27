@@ -11,6 +11,8 @@ CREATE TABLE users (
   full_name VARCHAR(255) NOT NULL,
   phone VARCHAR(50),
   role user_role DEFAULT 'STUDENT',
+  student_class VARCHAR(100),
+  student_id VARCHAR(100),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -170,3 +172,78 @@ CREATE POLICY "Allow all" ON bookings FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all" ON reports FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all" ON room_booking_guides FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all" ON booking_attachments FOR ALL USING (true) WITH CHECK (true);
+
+-- ============================================
+-- Smart Course Trading
+-- ============================================
+
+CREATE TYPE trade_listing_status AS ENUM ('OPEN', 'MATCHED', 'COMPLETED', 'CANCELLED');
+CREATE TYPE trade_match_status AS ENUM ('PENDING', 'ACCEPTED', 'REJECTED', 'COMPLETED');
+CREATE TYPE trade_course_type AS ENUM ('HAVE', 'WANT');
+
+-- Trade listings
+CREATE TABLE trade_listings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status trade_listing_status DEFAULT 'OPEN',
+  notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Courses attached to a listing
+CREATE TABLE trade_listing_courses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  listing_id UUID NOT NULL REFERENCES trade_listings(id) ON DELETE CASCADE,
+  course_name VARCHAR(255) NOT NULL,
+  course_code VARCHAR(50) NOT NULL,
+  section VARCHAR(50),
+  schedule VARCHAR(255),
+  credits INTEGER,
+  type trade_course_type NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Proposed matches between two listings
+CREATE TABLE trade_matches (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  listing_a_id UUID NOT NULL REFERENCES trade_listings(id) ON DELETE CASCADE,
+  listing_b_id UUID NOT NULL REFERENCES trade_listings(id) ON DELETE CASCADE,
+  initiated_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status trade_match_status DEFAULT 'PENDING',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(listing_a_id, listing_b_id)
+);
+
+-- Chat messages within a match
+CREATE TABLE trade_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  match_id UUID NOT NULL REFERENCES trade_matches(id) ON DELETE CASCADE,
+  sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Trading indexes
+CREATE INDEX idx_trade_listings_user ON trade_listings(user_id);
+CREATE INDEX idx_trade_listings_status ON trade_listings(status);
+CREATE INDEX idx_trade_listing_courses_listing ON trade_listing_courses(listing_id);
+CREATE INDEX idx_trade_listing_courses_code ON trade_listing_courses(course_code);
+CREATE INDEX idx_trade_matches_listing_a ON trade_matches(listing_a_id);
+CREATE INDEX idx_trade_matches_listing_b ON trade_matches(listing_b_id);
+CREATE INDEX idx_trade_matches_status ON trade_matches(status);
+CREATE INDEX idx_trade_messages_match ON trade_messages(match_id);
+CREATE INDEX idx_trade_messages_created ON trade_messages(created_at);
+
+-- Enable RLS
+ALTER TABLE trade_listings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE trade_listing_courses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE trade_matches ENABLE ROW LEVEL SECURITY;
+ALTER TABLE trade_messages ENABLE ROW LEVEL SECURITY;
+
+-- Permissive policies (same pattern as existing tables)
+CREATE POLICY "Allow all" ON trade_listings FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all" ON trade_listing_courses FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all" ON trade_matches FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all" ON trade_messages FOR ALL USING (true) WITH CHECK (true);

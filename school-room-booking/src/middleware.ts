@@ -7,7 +7,7 @@ export default withAuth(
     const pathname = req.nextUrl.pathname
 
     // Admin routes protection
-    if (pathname.startsWith('/admin')) {
+    if (pathname.startsWith('/admin') || pathname.startsWith('/trading/admin')) {
       if (token?.role !== 'ADMIN') {
         return NextResponse.redirect(new URL('/map', req.url))
       }

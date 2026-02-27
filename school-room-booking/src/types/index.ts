@@ -7,6 +7,8 @@ export interface User {
   email: string
   fullName: string
   role: UserRole
+  studentClass: string | null
+  studentId: string | null
 }
 
 export interface Building {
@@ -116,4 +118,58 @@ export interface BookingAttachment {
   mimeType: string | null
   uploadedBy: string
   createdAt: string
+}
+
+// ============================================
+// Smart Course Trading types (camelCase frontend)
+// ============================================
+
+export type TradeListingStatus = 'OPEN' | 'MATCHED' | 'COMPLETED' | 'CANCELLED'
+export type TradeMatchStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'COMPLETED'
+export type TradeCourseType = 'HAVE' | 'WANT'
+
+export interface TradeListingCourse {
+  id: string
+  listingId: string
+  courseName: string
+  courseCode: string
+  section: string | null
+  schedule: string | null
+  credits: number | null
+  type: TradeCourseType
+}
+
+export interface TradeListing {
+  id: string
+  userId: string
+  status: TradeListingStatus
+  notes: string | null
+  createdAt: string
+  updatedAt: string
+  userName?: string
+  haveCourses: TradeListingCourse[]
+  wantCourses: TradeListingCourse[]
+}
+
+export interface TradeMatch {
+  id: string
+  listingAId: string
+  listingBId: string
+  initiatedBy: string
+  status: TradeMatchStatus
+  createdAt: string
+  updatedAt: string
+  otherListing?: TradeListing
+  otherUserName?: string
+  matchScore?: number
+}
+
+export interface TradeMessage {
+  id: string
+  matchId: string
+  senderId: string
+  content: string
+  createdAt: string
+  senderName: string
+  isOwn: boolean
 }

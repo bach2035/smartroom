@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-School Room Booking System — students browse interactive SVG maps of their school, view room availability in real time, and submit booking requests requiring admin approval.
+Smart School Platform with two products:
+- **Smart Room Booking** — students browse interactive SVG maps of their school, view room availability in real time, and submit booking requests requiring admin approval.
+- **Smart Course Trading** — students post courses they have/want, get matched with compatible listings, propose trades, chat, and complete swaps.
 
 ## Tech Stack
 
@@ -13,7 +15,7 @@ School Room Booking System — students browse interactive SVG maps of their sch
 - **Styling:** Tailwind CSS 4 (inline theme in `globals.css`, no separate config)
 - **Database:** Supabase (hosted PostgreSQL) — direct client queries, no ORM
 - **Auth:** NextAuth.js v4 with Credentials provider, JWT strategy (30-day sessions)
-- **State:** Zustand (single store for map filter state)
+- **State:** Zustand (stores for map filter state and trading filter state)
 - **Package manager:** Bun (lockfile: `bun.lock`)
 
 ## Build & Development Commands
@@ -38,6 +40,12 @@ NEXTAUTH_SECRET                # JWT signing secret
 NEXTAUTH_URL                   # App URL (http://localhost:3000 for dev)
 ```
 
+Optional (email notifications via Nodemailer in `src/lib/email.ts`):
+
+```
+SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
+```
+
 ## Architecture
 
 ### Data Model
@@ -51,9 +59,15 @@ Building
         │   └── BookingAttachment
         └── RoomBookingGuide (approval_steps as JSONB)
 Report → Room, User (issue reporting with status tracking)
+
+TradeProfile → User (display_name, contact info for trading)
+TradeListing → User (status: OPEN/MATCHED/COMPLETED/CANCELLED)
+└── TradeListingCourse (course_name, course_code, type: HAVE/WANT)
+TradeMatch → TradeListing A + TradeListing B (status: PENDING/ACCEPTED/REJECTED/COMPLETED)
+└── TradeMessage (chat within a match)
 ```
 
-Database schema: `supabase/schema.sql`. Seed data: `supabase/seed.sql` (3 test users, 2 buildings, 3 floors, 13 rooms). Test credentials: `admin`/`john.doe`/`jane.smith`.
+Database schema: `supabase/schema.sql` (RLS enabled on all tables). Seed data: `supabase/seed.sql` (3 test users, 2 buildings, 3 floors, 13 rooms, 2 trade profiles, 2 trade listings). Test credentials: `admin`/`john.doe`/`jane.smith` (all passwords in seed.sql).
 
 ### Dual Type System
 
@@ -84,6 +98,7 @@ Two clients exported:
 |-------|--------|--------|
 | `(auth)` | `/login`, `/register` | Unauthenticated only |
 | `(main)` | `/map/**`, `/room/**`, `/bookings`, `/reports` | Authenticated users |
+| `(trading)` | `/trading/**` | Authenticated users |
 | `(admin)` | `/admin/**` | ADMIN role only |
 
 ### Server → Client Component Pattern
@@ -107,9 +122,11 @@ Each floor has an SVG file in `/public/maps/` (floor-a1.svg, floor-a2.svg, floor
 
 Click behavior: available room → navigate to `/room/[roomId]?date=YYYY-MM-DD`; booked room → popup with booking details; admin → AdminRoomPanel for triage.
 
-### Zustand Store (`src/store/mapStore.ts`)
+### Zustand Stores
 
-Single store: `selectedDate`, `startTime`, `endTime`, `selectedRoomId`, `searchResult`, `searched`. Defaults: today (GMT+7), 08:00–18:00. State persists across building/floor navigation.
+**`src/store/mapStore.ts`** — Map filter state: `selectedDate`, `startTime`, `endTime`, `selectedRoomId`, `searchResult`, `searched`. Defaults: today (GMT+7), 08:00–18:00. State persists across building/floor navigation.
+
+**`src/store/tradingStore.ts`** — Trading filter state: `searchQuery`, `courseCodeFilter`, `statusFilter` with setters and `resetFilters`.
 
 ### API Routes (`src/app/api/`)
 
@@ -122,6 +139,17 @@ Single store: `selectedDate`, `startTime`, `endTime`, `selectedRoomId`, `searchR
 - `GET /api/rooms/available` — Search available rooms with date/time filters
 - `GET /api/buildings`, `GET /api/buildings/[id]/floors`, `GET /api/floors/[id]`
 - `POST/GET /api/reports` — Issue reporting
+
+**Trading APIs:**
+- `GET/PUT /api/trading/profile` — Trade profile CRUD (upsert)
+- `GET/POST /api/trading/listings` — Browse OPEN listings + create listing
+- `GET /api/trading/listings/me` — User's own listings
+- `GET/PATCH/DELETE /api/trading/listings/[id]` — Listing detail, update, cancel
+- `GET /api/trading/listings/[id]/matches` — Matching algorithm (find compatible listings)
+- `GET/POST /api/trading/matches` — My matches + propose match (409 if duplicate)
+- `GET/PATCH /api/trading/matches/[id]` — Match detail + accept/reject
+- `GET/POST /api/trading/matches/[id]/messages` — Chat messages (polling with `?after=`)
+- `PATCH /api/trading/matches/[id]/complete` — Mark match + listings as COMPLETED
 
 **Admin APIs** (all check `session.user.role === 'ADMIN'`):
 - `PATCH /api/admin/bookings/[id]/approve` — Approve with `approved_by` + timestamp
@@ -149,3 +177,15 @@ Single store: `selectedDate`, `startTime`, `endTime`, `selectedRoomId`, `searchR
 - **User roles:** `STUDENT` (default) and `ADMIN` — enum `user_role` in database
 - **Primary color:** `#b11a1e` (deep red/maroon), defined as CSS variable in globals.css
 - **CSS utility classes:** Custom `.btn*`, `.card*`, `.form-*`, `.badge*`, `.table` classes defined in globals.css
+- **Deployment:** Standalone output mode (`next.config.ts`) with multi-stage Dockerfile for Bun-based production builds
+
+## Code Review Rules
+
+Claude must automatically review all written code for:
+- **Simplification:** remove unnecessary abstractions and intermediate variables
+- **Dead code:** remove unused imports, variables, and unreachable branches
+- **Duplication:** extract shared logic only at 3+ occurrences
+- **Lean functions:** ~40 line max, prefer early returns over deep nesting
+- **Bundle size:** use tree-shakeable imports (e.g. `import { x } from 'lib'` not `import lib`)
+- **Error handling:** consistent try/catch + console.error, never expose internal details to client
+- **Type safety:** no `any`, keep dual type system (snake_case DB / camelCase frontend) in sync

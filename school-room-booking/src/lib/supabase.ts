@@ -24,6 +24,8 @@ export interface User {
   full_name: string
   phone: string | null
   role: UserRole
+  student_class: string | null
+  student_id: string | null
   created_at: string
   updated_at: string
 }
@@ -156,4 +158,57 @@ export interface Report {
   user?: User
   room?: Room
   resolver?: User
+}
+
+// ============================================
+// Smart Course Trading types (snake_case DB)
+// ============================================
+
+export type TradeListingStatus = 'OPEN' | 'MATCHED' | 'COMPLETED' | 'CANCELLED'
+export type TradeMatchStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'COMPLETED'
+export type TradeCourseType = 'HAVE' | 'WANT'
+
+export interface TradeListing {
+  id: string
+  user_id: string
+  status: TradeListingStatus
+  notes: string | null
+  created_at: string
+  updated_at: string
+  user?: User
+  courses?: TradeListingCourse[]
+}
+
+export interface TradeListingCourse {
+  id: string
+  listing_id: string
+  course_name: string
+  course_code: string
+  section: string | null
+  schedule: string | null
+  credits: number | null
+  type: TradeCourseType
+  created_at: string
+}
+
+export interface TradeMatch {
+  id: string
+  listing_a_id: string
+  listing_b_id: string
+  initiated_by: string
+  status: TradeMatchStatus
+  created_at: string
+  updated_at: string
+  listing_a?: TradeListing
+  listing_b?: TradeListing
+  initiator?: User
+}
+
+export interface TradeMessage {
+  id: string
+  match_id: string
+  sender_id: string
+  content: string
+  created_at: string
+  sender?: User
 }

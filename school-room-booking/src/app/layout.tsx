@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "School Room Booking",
-  description: "Book rooms at your school with interactive maps",
+  title: "School Tools - Room Booking & Course Trading",
+  description: "Book rooms with interactive maps and trade course sections with other students",
 };
 
 export default function RootLayout({

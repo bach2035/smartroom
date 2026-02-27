@@ -8,10 +8,10 @@ INSERT INTO equipment (name, icon) VALUES
   ('Video Conference', 'video');
 
 -- Seed Users (passwords are hashed 'admin123' and 'student123')
-INSERT INTO users (username, email, password, full_name, role) VALUES
-  ('admin', 'admin@school.edu', '$2b$12$0ojnKa21IgA7YSfnrgIoP.RX0niut/..NyP0XlHkG7YtQGvoeK.Mm', 'System Administrator', 'ADMIN'),
-  ('john.doe', 'john.doe@student.school.edu', '$2b$12$XvjsB1/N4uXXQlp.g4pAduhQvACrR3igcWZuY0rWUjeWHqOwyvyw2', 'John Doe', 'STUDENT'),
-  ('jane.smith', 'jane.smith@student.school.edu', '$2b$12$XvjsB1/N4uXXQlp.g4pAduhQvACrR3igcWZuY0rWUjeWHqOwyvyw2', 'Jane Smith', 'STUDENT');
+INSERT INTO users (username, email, password, full_name, role, student_class, student_id) VALUES
+  ('admin', 'admin@school.edu', '$2b$12$0ojnKa21IgA7YSfnrgIoP.RX0niut/..NyP0XlHkG7YtQGvoeK.Mm', 'System Administrator', 'ADMIN', NULL, NULL),
+  ('john.doe', 'john.doe@student.school.edu', '$2b$12$XvjsB1/N4uXXQlp.g4pAduhQvACrR3igcWZuY0rWUjeWHqOwyvyw2', 'John Doe', 'STUDENT', 'Grade 11A', 'STU-2024-001'),
+  ('jane.smith', 'jane.smith@student.school.edu', '$2b$12$XvjsB1/N4uXXQlp.g4pAduhQvACrR3igcWZuY0rWUjeWHqOwyvyw2', 'Jane Smith', 'STUDENT', 'Grade 11B', 'STU-2024-002');
 
 -- Seed Buildings
 INSERT INTO buildings (name, description) VALUES
@@ -185,3 +185,33 @@ SELECT 'Club Meeting', 'Photography club weekly meeting',
        (CURRENT_DATE + INTERVAL '1 day' + INTERVAL '17 hours')::timestamptz,
        'PENDING', u.id, r.id
 FROM users u, rooms r WHERE u.username = 'jane.smith' AND r.room_number = 'B105';
+
+-- ============================================
+-- Seed Trading Data
+-- ============================================
+
+-- John's listing: has Math HL, wants Physics HL
+INSERT INTO trade_listings (user_id, status, notes)
+SELECT id, 'OPEN', 'Looking to swap my Math HL section for Physics HL. Prefer morning schedule.'
+FROM users WHERE username = 'john.doe';
+
+INSERT INTO trade_listing_courses (listing_id, course_name, course_code, section, schedule, credits, type)
+SELECT tl.id, 'Mathematics HL', 'MATH-HL', 'Section A', 'Mon/Wed 08:00-09:30', 6, 'HAVE'
+FROM trade_listings tl JOIN users u ON tl.user_id = u.id WHERE u.username = 'john.doe';
+
+INSERT INTO trade_listing_courses (listing_id, course_name, course_code, section, schedule, credits, type)
+SELECT tl.id, 'Physics HL', 'PHYS-HL', NULL, NULL, 6, 'WANT'
+FROM trade_listings tl JOIN users u ON tl.user_id = u.id WHERE u.username = 'john.doe';
+
+-- Jane's listing: has Physics HL, wants Math HL (perfect match with John)
+INSERT INTO trade_listings (user_id, status, notes)
+SELECT id, 'OPEN', 'Want to trade Physics HL for Math HL. Any section works.'
+FROM users WHERE username = 'jane.smith';
+
+INSERT INTO trade_listing_courses (listing_id, course_name, course_code, section, schedule, credits, type)
+SELECT tl.id, 'Physics HL', 'PHYS-HL', 'Section B', 'Tue/Thu 10:00-11:30', 6, 'HAVE'
+FROM trade_listings tl JOIN users u ON tl.user_id = u.id WHERE u.username = 'jane.smith';
+
+INSERT INTO trade_listing_courses (listing_id, course_name, course_code, section, schedule, credits, type)
+SELECT tl.id, 'Mathematics HL', 'MATH-HL', NULL, NULL, 6, 'WANT'
+FROM trade_listings tl JOIN users u ON tl.user_id = u.id WHERE u.username = 'jane.smith';

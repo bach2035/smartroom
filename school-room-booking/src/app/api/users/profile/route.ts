@@ -13,7 +13,7 @@ export async function GET() {
 
     const { data: user, error } = await supabaseAdmin
       .from('users')
-      .select('id, username, full_name, email, phone, role')
+      .select('id, username, full_name, email, phone, role, student_class, student_id')
       .eq('id', session.user.id)
       .single()
 
@@ -25,6 +25,8 @@ export async function GET() {
       email: user.email,
       phone: user.phone,
       role: user.role,
+      studentClass: user.student_class,
+      studentId: user.student_id,
     })
   } catch (error) {
     console.error('Error fetching profile:', error)
@@ -44,7 +46,7 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json()
-    const { fullName, email, phone } = body
+    const { fullName, email, phone, studentClass, studentId } = body
 
     // Validate email format
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -75,12 +77,14 @@ export async function PATCH(request: Request) {
     if (fullName !== undefined) updates.full_name = fullName
     if (email !== undefined) updates.email = email
     if (phone !== undefined) updates.phone = phone || null
+    if (studentClass !== undefined) updates.student_class = studentClass || null
+    if (studentId !== undefined) updates.student_id = studentId || null
 
     const { data: user, error } = await supabaseAdmin
       .from('users')
       .update(updates)
       .eq('id', session.user.id)
-      .select('username, full_name, email, phone, role')
+      .select('username, full_name, email, phone, role, student_class, student_id')
       .single()
 
     if (error) throw error
@@ -91,6 +95,8 @@ export async function PATCH(request: Request) {
       email: user.email,
       phone: user.phone,
       role: user.role,
+      studentClass: user.student_class,
+      studentId: user.student_id,
     })
   } catch (error) {
     console.error('Error updating profile:', error)

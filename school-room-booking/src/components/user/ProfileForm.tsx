@@ -10,6 +10,8 @@ interface Profile {
   email: string
   phone: string | null
   role: string
+  studentClass: string | null
+  studentId: string | null
 }
 
 export default function ProfileForm() {
@@ -17,6 +19,8 @@ export default function ProfileForm() {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
+  const [studentClass, setStudentClass] = useState('')
+  const [studentId, setStudentId] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -29,6 +33,8 @@ export default function ProfileForm() {
         setFullName(data.fullName || '')
         setEmail(data.email || '')
         setPhone(data.phone || '')
+        setStudentClass(data.studentClass || '')
+        setStudentId(data.studentId || '')
       })
       .catch(() => setMessage({ type: 'error', text: 'Failed to load profile' }))
       .finally(() => setLoading(false))
@@ -43,7 +49,7 @@ export default function ProfileForm() {
       const res = await fetch('/api/users/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullName, email, phone }),
+        body: JSON.stringify({ fullName, email, phone, studentClass, studentId }),
       })
 
       const data = await res.json()
@@ -124,6 +130,22 @@ export default function ProfileForm() {
         type="tel"
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
+      />
+
+      <Input
+        id="studentClass"
+        label="Class (optional)"
+        value={studentClass}
+        onChange={(e) => setStudentClass(e.target.value)}
+        placeholder="e.g. Grade 11A"
+      />
+
+      <Input
+        id="studentId"
+        label="Student ID (optional)"
+        value={studentId}
+        onChange={(e) => setStudentId(e.target.value)}
+        placeholder="e.g. STU-2024-001"
       />
 
       <div className="pt-2">
