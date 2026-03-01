@@ -12,6 +12,7 @@ interface Profile {
   role: string
   studentClass: string | null
   studentId: string | null
+  facebookLink: string | null
 }
 
 export default function ProfileForm() {
@@ -21,6 +22,7 @@ export default function ProfileForm() {
   const [phone, setPhone] = useState('')
   const [studentClass, setStudentClass] = useState('')
   const [studentId, setStudentId] = useState('')
+  const [facebookLink, setFacebookLink] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -35,6 +37,7 @@ export default function ProfileForm() {
         setPhone(data.phone || '')
         setStudentClass(data.studentClass || '')
         setStudentId(data.studentId || '')
+        setFacebookLink(data.facebookLink || '')
       })
       .catch(() => setMessage({ type: 'error', text: 'Failed to load profile' }))
       .finally(() => setLoading(false))
@@ -49,7 +52,7 @@ export default function ProfileForm() {
       const res = await fetch('/api/users/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullName, email, phone, studentClass, studentId }),
+        body: JSON.stringify({ fullName, email, phone, studentClass, studentId, facebookLink }),
       })
 
       const data = await res.json()
@@ -91,23 +94,6 @@ export default function ProfileForm() {
       )}
 
       <Input
-        id="username"
-        label="Username"
-        value={profile?.username || ''}
-        disabled
-        className="bg-slate-50 text-slate-500"
-      />
-
-      <div className="w-full">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-        <input
-          className="block w-full px-3 py-2 border border-gray-300 rounded-md bg-slate-50 text-slate-500"
-          value={profile?.role === 'ADMIN' ? 'Administrator' : 'Student'}
-          disabled
-        />
-      </div>
-
-      <Input
         id="fullName"
         label="Full Name"
         value={fullName}
@@ -126,10 +112,20 @@ export default function ProfileForm() {
 
       <Input
         id="phone"
-        label="Phone (optional)"
+        label="Phone"
         type="tel"
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
+        required
+        placeholder="e.g. 0912345678"
+      />
+
+      <Input
+        id="facebookLink"
+        label="Facebook Link (optional)"
+        value={facebookLink}
+        onChange={(e) => setFacebookLink(e.target.value)}
+        placeholder="e.g. https://facebook.com/username"
       />
 
       <Input

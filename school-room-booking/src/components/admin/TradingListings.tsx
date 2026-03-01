@@ -11,6 +11,7 @@ interface CourseInfo {
   id: string
   courseName: string
   courseCode: string
+  classCode?: string | null
   section?: string | null
   schedule?: string | null
   credits?: number | null
@@ -176,10 +177,10 @@ export default function TradingListings() {
                   </div>
                   <div className="flex flex-wrap gap-1.5 mb-2">
                     {listing.haveCourses.map(c => (
-                      <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="HAVE" />
+                      <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="HAVE" classCode={c.classCode} />
                     ))}
                     {listing.wantCourses.map(c => (
-                      <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="WANT" />
+                      <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="WANT" classCode={c.classCode} />
                     ))}
                   </div>
                   {listing.notes && (
@@ -233,10 +234,10 @@ export default function TradingListings() {
               <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Courses</p>
               <div className="flex flex-wrap gap-1.5">
                 {selectedDetail.haveCourses.map(c => (
-                  <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="HAVE" section={c.section} schedule={c.schedule} />
+                  <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="HAVE" classCode={c.classCode} section={c.section} schedule={c.schedule} />
                 ))}
                 {selectedDetail.wantCourses.map(c => (
-                  <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="WANT" section={c.section} schedule={c.schedule} />
+                  <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="WANT" classCode={c.classCode} section={c.section} schedule={c.schedule} />
                 ))}
               </div>
             </div>

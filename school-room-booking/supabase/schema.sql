@@ -13,6 +13,7 @@ CREATE TABLE users (
   role user_role DEFAULT 'STUDENT',
   student_class VARCHAR(100),
   student_id VARCHAR(100),
+  facebook_link VARCHAR(500),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -197,6 +198,7 @@ CREATE TABLE trade_listing_courses (
   listing_id UUID NOT NULL REFERENCES trade_listings(id) ON DELETE CASCADE,
   course_name VARCHAR(255) NOT NULL,
   course_code VARCHAR(50) NOT NULL,
+  class_code VARCHAR(50),
   section VARCHAR(50),
   schedule VARCHAR(255),
   credits INTEGER,
@@ -211,6 +213,8 @@ CREATE TABLE trade_matches (
   listing_b_id UUID NOT NULL REFERENCES trade_listings(id) ON DELETE CASCADE,
   initiated_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   status trade_match_status DEFAULT 'PENDING',
+  completed_by_a BOOLEAN DEFAULT false,
+  completed_by_b BOOLEAN DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   UNIQUE(listing_a_id, listing_b_id)
@@ -247,3 +251,17 @@ CREATE POLICY "Allow all" ON trade_listings FOR ALL USING (true) WITH CHECK (tru
 CREATE POLICY "Allow all" ON trade_listing_courses FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all" ON trade_matches FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all" ON trade_messages FOR ALL USING (true) WITH CHECK (true);
+
+-- ============================================
+-- Course Catalog
+-- ============================================
+
+CREATE TABLE courses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(255) UNIQUE NOT NULL,
+  code VARCHAR(50) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE courses ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all" ON courses FOR ALL USING (true) WITH CHECK (true);

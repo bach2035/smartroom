@@ -64,15 +64,15 @@ export async function GET(
           .filter((c) => c.type === 'HAVE')
           .map((c) => ({
             id: c.id, listingId: c.listing_id, courseName: c.course_name,
-            courseCode: c.course_code, section: c.section, schedule: c.schedule,
-            credits: c.credits, type: c.type,
+            courseCode: c.course_code, classCode: c.class_code, section: c.section,
+            schedule: c.schedule, credits: c.credits, type: c.type,
           })),
         wantCourses: courses
           .filter((c) => c.type === 'WANT')
           .map((c) => ({
             id: c.id, listingId: c.listing_id, courseName: c.course_name,
-            courseCode: c.course_code, section: c.section, schedule: c.schedule,
-            credits: c.credits, type: c.type,
+            courseCode: c.course_code, classCode: c.class_code, section: c.section,
+            schedule: c.schedule, credits: c.credits, type: c.type,
           })),
       }
     }
@@ -85,6 +85,8 @@ export async function GET(
         createdAt: match.created_at,
         updatedAt: match.updated_at,
         isInitiator: match.initiated_by === session.user.id,
+        completedByMe: isA ? !!match.completed_by_a : !!match.completed_by_b,
+        completedByOther: isA ? !!match.completed_by_b : !!match.completed_by_a,
         myListing: isA ? transformSide(listingA) : transformSide(listingB),
         otherListing: isA ? transformSide(listingB) : transformSide(listingA),
       },

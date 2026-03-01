@@ -184,6 +184,7 @@ export interface TradeListingCourse {
   listing_id: string
   course_name: string
   course_code: string
+  class_code: string | null
   section: string | null
   schedule: string | null
   credits: number | null

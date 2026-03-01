@@ -1,13 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import SearchableSelect from '@/components/ui/SearchableSelect'
 
 interface CourseRow {
   courseName: string
   courseCode: string
+  classCode: string
   section: string
   schedule: string
   credits: string
+}
+
+interface CatalogCourse {
+  name: string
+  code: string
 }
 
 interface ListingFormProps {
@@ -22,7 +29,7 @@ interface ListingFormProps {
   submitLabel?: string
 }
 
-const emptyCourse: CourseRow = { courseName: '', courseCode: '', section: '', schedule: '', credits: '' }
+const emptyCourse: CourseRow = { courseName: '', courseCode: '', classCode: '', section: '', schedule: '', credits: '' }
 
 export default function ListingForm({
   initialNotes = '',
@@ -40,6 +47,33 @@ export default function ListingForm({
   )
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [catalog, setCatalog] = useState<CatalogCourse[]>([])
+
+  useEffect(() => {
+    fetch('/api/courses')
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setCatalog(data.map((c: { name: string; code: string }) => ({ name: c.name, code: c.code })))
+      })
+      .catch(console.error)
+  }, [])
+
+  // Build display label "Name (CODE)" for dropdown
+  const catalogOptions = catalog.map((c) => `${c.name} (${c.code})`)
+
+  function selectCourse(
+    list: CourseRow[],
+    setList: (rows: CourseRow[]) => void,
+    index: number,
+    displayValue: string
+  ) {
+    const updated = [...list]
+    const match = catalog.find((c) => `${c.name} (${c.code})` === displayValue)
+    if (match) {
+      updated[index] = { ...updated[index], courseName: match.name, courseCode: match.code }
+    }
+    setList(updated)
+  }
 
   function updateCourse(
     list: CourseRow[],
@@ -62,11 +96,11 @@ export default function ListingForm({
     e.preventDefault()
     setError('')
 
-    const validHave = haveCourses.filter((c) => c.courseName && c.courseCode)
-    const validWant = wantCourses.filter((c) => c.courseName && c.courseCode)
+    const validHave = haveCourses.filter((c) => c.courseName && c.courseCode && c.classCode)
+    const validWant = wantCourses.filter((c) => c.courseName && c.courseCode && c.classCode)
 
     if (!validHave.length || !validWant.length) {
-      setError('At least one HAVE course and one WANT course with name and code are required.')
+      setError('At least one HAVE course and one WANT course with class code are required.')
       return
     }
 
@@ -99,42 +133,34 @@ export default function ListingForm({
           </button>
         </div>
         <div className="space-y-3">
-          {courses.map((course, i) => (
-            <div key={i} className="grid grid-cols-2 sm:grid-cols-6 gap-2 items-end">
-              <input
-                className="form-input col-span-2 sm:col-span-2"
-                placeholder="Course Name *"
-                value={course.courseName}
-                onChange={(e) => updateCourse(courses, setCourses, i, 'courseName', e.target.value)}
-                required
-              />
-              <input
-                className="form-input"
-                placeholder="Code *"
-                value={course.courseCode}
-                onChange={(e) => updateCourse(courses, setCourses, i, 'courseCode', e.target.value)}
-                required
-              />
-              <input
-                className="form-input"
-                placeholder="Section"
-                value={course.section}
-                onChange={(e) => updateCourse(courses, setCourses, i, 'section', e.target.value)}
-              />
-              <input
-                className="form-input"
-                placeholder="Schedule"
-                value={course.schedule}
-                onChange={(e) => updateCourse(courses, setCourses, i, 'schedule', e.target.value)}
-              />
-              <div className="flex gap-2">
-                <input
-                  className="form-input w-20"
-                  placeholder="Credits"
-                  type="number"
-                  value={course.credits}
-                  onChange={(e) => updateCourse(courses, setCourses, i, 'credits', e.target.value)}
-                />
+          {courses.map((course, i) => {
+            const displayValue = course.courseName && course.courseCode
+              ? `${course.courseName} (${course.courseCode})`
+              : ''
+            return (
+              <div key={i} className="flex gap-2 items-center">
+                <div className="flex-1">
+                  <SearchableSelect
+                    options={catalogOptions}
+                    value={displayValue}
+                    onChange={(val) => selectCourse(courses, setCourses, i, val)}
+                    placeholder="Course *"
+                    required
+                  />
+                </div>
+                <div className="w-28 relative">
+                  <input
+                    className="form-input w-full"
+                    value={course.classCode}
+                    onChange={(e) => updateCourse(courses, setCourses, i, 'classCode', e.target.value)}
+                    required
+                  />
+                  {!course.classCode && (
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">
+                      Class Code <span className="text-red-500">*</span>
+                    </span>
+                  )}
+                </div>
                 {courses.length > 1 && (
                   <button
                     type="button"
@@ -145,8 +171,8 @@ export default function ListingForm({
                   </button>
                 )}
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     )
@@ -160,6 +186,10 @@ export default function ListingForm({
 
       {renderCourseRows('Courses I HAVE (to trade away)', haveCourses, setHaveCourses, 'text-green-700')}
       {renderCourseRows('Courses I WANT (to receive)', wantCourses, setWantCourses, 'text-blue-700')}
+
+      <p className="text-xs text-slate-400 italic">
+        <span className="text-red-500 not-italic">*</span> indicates compulsory fields
+      </p>
 
       <div>
         <label className="form-label">Notes (optional)</label>

@@ -19,13 +19,17 @@ export async function GET(
       .from('trade_listings')
       .select(`
         *,
-        user:users(full_name, email, student_class),
+        user:users(full_name, username, email, phone, student_class, student_id),
         courses:trade_listing_courses(*)
       `)
       .eq('id', id)
       .single()
 
-    if (error || !listing) {
+    if (error) {
+      console.error('Error fetching listing:', error)
+      return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
+    }
+    if (!listing) {
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
     }
 
@@ -41,8 +45,11 @@ export async function GET(
         createdAt: listing.created_at,
         updatedAt: listing.updated_at,
         userName: (user?.full_name as string) || null,
+        username: (user?.username as string) || null,
         contactEmail: (user?.email as string) || null,
+        phone: (user?.phone as string) || null,
         studentClass: (user?.student_class as string) || null,
+        studentId: (user?.student_id as string) || null,
         isOwn: listing.user_id === session.user.id,
         haveCourses: courses
           .filter((c: Record<string, unknown>) => c.type === 'HAVE')
@@ -51,6 +58,7 @@ export async function GET(
             listingId: c.listing_id,
             courseName: c.course_name,
             courseCode: c.course_code,
+            classCode: c.class_code,
             section: c.section,
             schedule: c.schedule,
             credits: c.credits,
@@ -63,6 +71,7 @@ export async function GET(
             listingId: c.listing_id,
             courseName: c.course_name,
             courseCode: c.course_code,
+            classCode: c.class_code,
             section: c.section,
             schedule: c.schedule,
             credits: c.credits,
@@ -126,6 +135,7 @@ export async function PATCH(
         listing_id: id,
         course_name: c.courseName,
         course_code: c.courseCode,
+        class_code: c.classCode || null,
         section: c.section || null,
         schedule: c.schedule || null,
         credits: c.credits || null,
@@ -135,6 +145,7 @@ export async function PATCH(
         listing_id: id,
         course_name: c.courseName,
         course_code: c.courseCode,
+        class_code: c.classCode || null,
         section: c.section || null,
         schedule: c.schedule || null,
         credits: c.credits || null,

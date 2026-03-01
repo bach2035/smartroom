@@ -88,7 +88,7 @@ export default function MatchingListings({ listingId }: MatchingListingsProps) {
                 <p className="text-xs font-medium text-slate-500 mb-1">HAS</p>
                 <div className="flex flex-wrap gap-1.5">
                   {match.haveCourses.map((c) => (
-                    <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="HAVE" />
+                    <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="HAVE" classCode={c.classCode} />
                   ))}
                 </div>
               </div>
@@ -98,7 +98,7 @@ export default function MatchingListings({ listingId }: MatchingListingsProps) {
                 <p className="text-xs font-medium text-slate-500 mb-1">WANTS</p>
                 <div className="flex flex-wrap gap-1.5">
                   {match.wantCourses.map((c) => (
-                    <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="WANT" />
+                    <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="WANT" classCode={c.classCode} />
                   ))}
                 </div>
               </div>

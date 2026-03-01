@@ -10,6 +10,7 @@ interface MatchCourse {
   id: string
   courseName: string
   courseCode: string
+  classCode?: string | null
   type: string
 }
 
@@ -34,6 +35,7 @@ interface Match {
 }
 
 interface MatchDetailCourse extends MatchCourse {
+  classCode?: string | null
   section?: string | null
   schedule?: string | null
   credits?: number | null
@@ -157,10 +159,10 @@ export default function TradingMatches() {
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {match.listingA?.haveCourses.map(c => (
-                      <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="HAVE" />
+                      <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="HAVE" classCode={c.classCode} />
                     ))}
                     {match.listingA?.wantCourses.map(c => (
-                      <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="WANT" />
+                      <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="WANT" classCode={c.classCode} />
                     ))}
                   </div>
                 </div>
@@ -247,7 +249,7 @@ function ListingSide({ label, listing }: { label: string; listing: MatchDetail['
           <p className="text-xs text-slate-500 mb-1">Has:</p>
           <div className="flex flex-wrap gap-1">
             {listing.haveCourses.map(c => (
-              <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="HAVE" />
+              <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="HAVE" classCode={c.classCode} />
             ))}
           </div>
         </div>
@@ -255,7 +257,7 @@ function ListingSide({ label, listing }: { label: string; listing: MatchDetail['
           <p className="text-xs text-slate-500 mb-1">Wants:</p>
           <div className="flex flex-wrap gap-1">
             {listing.wantCourses.map(c => (
-              <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="WANT" />
+              <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="WANT" classCode={c.classCode} />
             ))}
           </div>
         </div>

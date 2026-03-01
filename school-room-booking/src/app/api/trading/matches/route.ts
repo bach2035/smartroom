@@ -71,15 +71,15 @@ export async function GET() {
             .filter((c) => c.type === 'HAVE')
             .map((c) => ({
               id: c.id, listingId: c.listing_id, courseName: c.course_name,
-              courseCode: c.course_code, section: c.section, schedule: c.schedule,
-              credits: c.credits, type: c.type,
+              courseCode: c.course_code, classCode: c.class_code, section: c.section,
+              schedule: c.schedule, credits: c.credits, type: c.type,
             })),
           wantCourses: courses
             .filter((c) => c.type === 'WANT')
             .map((c) => ({
               id: c.id, listingId: c.listing_id, courseName: c.course_name,
-              courseCode: c.course_code, section: c.section, schedule: c.schedule,
-              credits: c.credits, type: c.type,
+              courseCode: c.course_code, classCode: c.class_code, section: c.section,
+              schedule: c.schedule, credits: c.credits, type: c.type,
             })),
         },
       }

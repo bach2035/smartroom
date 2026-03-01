@@ -17,8 +17,8 @@ interface ListingDetail {
   contactEmail: string | null
   studentClass: string | null
   isOwn: boolean
-  haveCourses: { id: string; courseCode: string; courseName: string; section: string | null; schedule: string | null; credits: number | null; type: string }[]
-  wantCourses: { id: string; courseCode: string; courseName: string; section: string | null; schedule: string | null; credits: number | null; type: string }[]
+  haveCourses: { id: string; courseCode: string; courseName: string; classCode: string | null; section: string | null; schedule: string | null; credits: number | null; type: string }[]
+  wantCourses: { id: string; courseCode: string; courseName: string; classCode: string | null; section: string | null; schedule: string | null; credits: number | null; type: string }[]
 }
 
 export default function ListingDetailClient({ listingId }: { listingId: string }) {
@@ -95,6 +95,7 @@ export default function ListingDetailClient({ listingId }: { listingId: string }
                   courseCode={c.courseCode}
                   courseName={c.courseName}
                   type="HAVE"
+                  classCode={c.classCode}
                   section={c.section}
                   schedule={c.schedule}
                 />
@@ -113,6 +114,7 @@ export default function ListingDetailClient({ listingId }: { listingId: string }
                   courseCode={c.courseCode}
                   courseName={c.courseName}
                   type="WANT"
+                  classCode={c.classCode}
                   section={c.section}
                   schedule={c.schedule}
                 />

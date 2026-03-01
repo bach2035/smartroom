@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       .select(`
         id, status, notes, created_at, updated_at,
         user:users!trade_listings_user_id_fkey(id, full_name, username, email, student_class, student_id),
-        courses:trade_listing_courses(id, course_name, course_code, section, schedule, credits, type)
+        courses:trade_listing_courses(id, course_name, course_code, class_code, section, schedule, credits, type)
       `)
       .order('created_at', { ascending: false })
 
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     const result = (listings || [])
       .map((l) => {
         const user = l.user as unknown as { id: string; full_name: string; username: string; email: string; student_class: string | null; student_id: string | null } | null
-        const courses = (l.courses || []) as unknown as { id: string; course_name: string; course_code: string; section: string | null; schedule: string | null; credits: number | null; type: string }[]
+        const courses = (l.courses || []) as unknown as { id: string; course_name: string; course_code: string; class_code: string | null; section: string | null; schedule: string | null; credits: number | null; type: string }[]
         return {
           id: l.id,
           status: l.status,
@@ -54,6 +54,7 @@ export async function GET(request: NextRequest) {
             id: c.id,
             courseName: c.course_name,
             courseCode: c.course_code,
+            classCode: c.class_code,
             section: c.section,
             schedule: c.schedule,
             credits: c.credits,
@@ -63,6 +64,7 @@ export async function GET(request: NextRequest) {
             id: c.id,
             courseName: c.course_name,
             courseCode: c.course_code,
+            classCode: c.class_code,
             section: c.section,
             schedule: c.schedule,
             credits: c.credits,

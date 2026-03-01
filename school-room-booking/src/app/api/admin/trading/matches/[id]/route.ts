@@ -20,12 +20,12 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
           listing_a:trade_listings!trade_matches_listing_a_id_fkey(
             id, status, notes, created_at,
             user:users!trade_listings_user_id_fkey(id, full_name, username, email),
-            courses:trade_listing_courses(id, course_name, course_code, section, schedule, credits, type)
+            courses:trade_listing_courses(id, course_name, course_code, class_code, section, schedule, credits, type)
           ),
           listing_b:trade_listings!trade_matches_listing_b_id_fkey(
             id, status, notes, created_at,
             user:users!trade_listings_user_id_fkey(id, full_name, username, email),
-            courses:trade_listing_courses(id, course_name, course_code, section, schedule, credits, type)
+            courses:trade_listing_courses(id, course_name, course_code, class_code, section, schedule, credits, type)
           )
         `)
         .eq('id', id)
@@ -43,7 +43,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     const transformListing = (listing: Record<string, unknown> | null) => {
       if (!listing) return null
       const user = listing.user as unknown as { id: string; full_name: string; username: string; email: string } | null
-      const courses = (listing.courses || []) as unknown as { id: string; course_name: string; course_code: string; section: string | null; schedule: string | null; credits: number | null; type: string }[]
+      const courses = (listing.courses || []) as unknown as { id: string; course_name: string; course_code: string; class_code: string | null; section: string | null; schedule: string | null; credits: number | null; type: string }[]
       return {
         id: listing.id,
         status: listing.status,
@@ -51,11 +51,11 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         createdAt: listing.created_at,
         user: user ? { id: user.id, fullName: user.full_name, username: user.username, email: user.email } : null,
         haveCourses: courses.filter(c => c.type === 'HAVE').map(c => ({
-          id: c.id, courseName: c.course_name, courseCode: c.course_code,
+          id: c.id, courseName: c.course_name, courseCode: c.course_code, classCode: c.class_code,
           section: c.section, schedule: c.schedule, credits: c.credits, type: c.type,
         })),
         wantCourses: courses.filter(c => c.type === 'WANT').map(c => ({
-          id: c.id, courseName: c.course_name, courseCode: c.course_code,
+          id: c.id, courseName: c.course_name, courseCode: c.course_code, classCode: c.class_code,
           section: c.section, schedule: c.schedule, credits: c.credits, type: c.type,
         })),
       }

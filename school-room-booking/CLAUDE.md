@@ -168,6 +168,10 @@ Click behavior: available room → navigate to `/room/[roomId]?date=YYYY-MM-DD`;
 - `formatDate()` / `formatTime()` / `formatDateTime()` — Display formatting in GMT+7
 - `generateTimeSlots()` — Creates 30-min slots array from 7:00–22:00
 
+### Sticky Navigation Context
+
+This app has multiple product sections (Room Booking, Course Trading) sharing common pages (profile, settings, etc.). Shared pages must preserve the user's last active product section in the header nav. Use `sessionStorage` to track which product the user was last on, and restore it on any page that doesn't explicitly belong to a specific section. Implementation: `Header.tsx` saves `lastProduct` to `sessionStorage` on product-specific routes and reads it back on neutral routes.
+
 ### Key Conventions
 
 - **Import alias:** `@/*` maps to `./src/*`

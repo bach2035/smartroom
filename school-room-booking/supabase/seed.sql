@@ -215,3 +215,17 @@ FROM trade_listings tl JOIN users u ON tl.user_id = u.id WHERE u.username = 'jan
 INSERT INTO trade_listing_courses (listing_id, course_name, course_code, section, schedule, credits, type)
 SELECT tl.id, 'Mathematics HL', 'MATH-HL', NULL, NULL, 6, 'WANT'
 FROM trade_listings tl JOIN users u ON tl.user_id = u.id WHERE u.username = 'jane.smith';
+
+-- ============================================
+-- Seed Course Catalog
+-- ============================================
+
+INSERT INTO courses (name, code) VALUES
+  ('Kinh doanh quốc tế', 'KDQT'),
+  ('Truyền thông trong kinh doanh quốc tế', 'TTKDQT'),
+  ('Marketing quốc tế', 'MKTQT'),
+  ('Toán cao cấp', 'TCC'),
+  ('Giao dịch thương mại quốc tế', 'GDTMQT'),
+  ('Lịch sử đảng', 'LSD'),
+  ('Tư tưởng đạo đức Hồ Chí Minh', 'TTDDHCM'),
+  ('Marketing căn bản', 'MKTCB');

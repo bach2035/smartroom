@@ -13,8 +13,8 @@ interface MatchSide {
   userName: string | null
   contactEmail: string | null
   studentClass: string | null
-  haveCourses: { id: string; courseCode: string; courseName: string; section: string | null; type: TradeCourseType }[]
-  wantCourses: { id: string; courseCode: string; courseName: string; section: string | null; type: TradeCourseType }[]
+  haveCourses: { id: string; courseCode: string; courseName: string; classCode: string | null; section: string | null; type: TradeCourseType }[]
+  wantCourses: { id: string; courseCode: string; courseName: string; classCode: string | null; section: string | null; type: TradeCourseType }[]
 }
 
 interface MatchDetail {
@@ -22,6 +22,8 @@ interface MatchDetail {
   status: TradeMatchStatus
   isInitiator: boolean
   createdAt: string
+  completedByMe: boolean
+  completedByOther: boolean
   myListing: MatchSide
   otherListing: MatchSide
 }
@@ -87,6 +89,24 @@ export default function MatchDetailClient({ matchId }: { matchId: string }) {
     }
   }
 
+  async function handleCancelComplete() {
+    if (!confirm('Cancel your completion confirmation?')) return
+    setActing(true)
+    setMessage('')
+    try {
+      const res = await fetch(`/api/trading/matches/${matchId}/complete`, { method: 'DELETE' })
+      const data = await res.json()
+      if (res.ok) {
+        setMessage(data.message)
+        fetchMatch()
+      } else {
+        setMessage(data.error || 'Failed to cancel')
+      }
+    } finally {
+      setActing(false)
+    }
+  }
+
   if (loading) {
     return <div className="max-w-3xl mx-auto px-4 py-8 text-center text-slate-500">Loading...</div>
   }
@@ -96,7 +116,8 @@ export default function MatchDetailClient({ matchId }: { matchId: string }) {
   }
 
   const canRespond = match.status === 'PENDING' && !match.isInitiator
-  const canComplete = match.status === 'ACCEPTED'
+  const canComplete = match.status === 'ACCEPTED' && !match.completedByMe
+  const waitingForOther = match.status === 'ACCEPTED' && match.completedByMe && !match.completedByOther
   const chatEnabled = match.status === 'ACCEPTED' || match.status === 'COMPLETED'
 
   return (
@@ -126,7 +147,7 @@ export default function MatchDetailClient({ matchId }: { matchId: string }) {
                 <p className="text-xs text-slate-500 mb-1">You have:</p>
                 <div className="flex flex-wrap gap-1.5">
                   {match.myListing.haveCourses.map((c) => (
-                    <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="HAVE" />
+                    <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="HAVE" classCode={c.classCode} />
                   ))}
                 </div>
               </div>
@@ -134,7 +155,7 @@ export default function MatchDetailClient({ matchId }: { matchId: string }) {
                 <p className="text-xs text-slate-500 mb-1">You want:</p>
                 <div className="flex flex-wrap gap-1.5">
                   {match.myListing.wantCourses.map((c) => (
-                    <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="WANT" />
+                    <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="WANT" classCode={c.classCode} />
                   ))}
                 </div>
               </div>
@@ -151,7 +172,7 @@ export default function MatchDetailClient({ matchId }: { matchId: string }) {
                 <p className="text-xs text-slate-500 mb-1">They have:</p>
                 <div className="flex flex-wrap gap-1.5">
                   {match.otherListing.haveCourses.map((c) => (
-                    <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="HAVE" />
+                    <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="HAVE" classCode={c.classCode} />
                   ))}
                 </div>
               </div>
@@ -159,7 +180,7 @@ export default function MatchDetailClient({ matchId }: { matchId: string }) {
                 <p className="text-xs text-slate-500 mb-1">They want:</p>
                 <div className="flex flex-wrap gap-1.5">
                   {match.otherListing.wantCourses.map((c) => (
-                    <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="WANT" />
+                    <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="WANT" classCode={c.classCode} />
                   ))}
                 </div>
               </div>
@@ -183,6 +204,29 @@ export default function MatchDetailClient({ matchId }: { matchId: string }) {
             <button onClick={handleComplete} disabled={acting} className="btn btn-primary">
               {acting ? 'Completing...' : 'Mark as Completed'}
             </button>
+            {match.completedByOther && (
+              <p className="text-xs text-green-600 mt-2">The other party has already confirmed completion.</p>
+            )}
+          </div>
+        )}
+
+        {waitingForOther && (
+          <div className="border-t pt-4">
+            <div className="flex gap-3">
+              <button disabled className="btn btn-primary opacity-60 cursor-not-allowed">
+                Waiting for approval
+              </button>
+              <button
+                onClick={handleCancelComplete}
+                disabled={acting}
+                className="btn btn-secondary text-red-600 hover:text-red-700"
+              >
+                {acting ? 'Cancelling...' : 'Cancel'}
+              </button>
+            </div>
+            <p className="text-xs text-slate-500 mt-2">
+              You have confirmed completion. Waiting for the other party to confirm.
+            </p>
           </div>
         )}
       </div>

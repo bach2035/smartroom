@@ -14,6 +14,7 @@ export async function GET() {
       .from('trade_listings')
       .select(`
         *,
+        user:users(full_name),
         courses:trade_listing_courses(*)
       `)
       .eq('user_id', session.user.id)
@@ -26,6 +27,7 @@ export async function GET() {
 
     const result = (listings || []).map((listing) => {
       const courses = listing.courses || []
+      const user = listing.user as unknown as { full_name: string } | null
       return {
         id: listing.id,
         userId: listing.user_id,
@@ -33,6 +35,7 @@ export async function GET() {
         notes: listing.notes,
         createdAt: listing.created_at,
         updatedAt: listing.updated_at,
+        userName: user?.full_name || null,
         haveCourses: courses
           .filter((c: Record<string, unknown>) => c.type === 'HAVE')
           .map((c: Record<string, unknown>) => ({
@@ -40,6 +43,7 @@ export async function GET() {
             listingId: c.listing_id,
             courseName: c.course_name,
             courseCode: c.course_code,
+            classCode: c.class_code,
             section: c.section,
             schedule: c.schedule,
             credits: c.credits,
@@ -52,6 +56,7 @@ export async function GET() {
             listingId: c.listing_id,
             courseName: c.course_name,
             courseCode: c.course_code,
+            classCode: c.class_code,
             section: c.section,
             schedule: c.schedule,
             credits: c.credits,

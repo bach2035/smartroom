@@ -36,7 +36,20 @@ export default function Header() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  const currentProduct: Product = pathname.startsWith('/trading') ? 'trading' : 'booking'
+  const isTrading = pathname.startsWith('/trading')
+  const isBooking = pathname.startsWith('/map') || pathname.startsWith('/bookings') || pathname.startsWith('/room') || pathname.startsWith('/reports') || pathname.startsWith('/admin')
+  const hasExplicitProduct = isTrading || isBooking
+
+  // Remember last active product so shared pages (profile, etc.) can restore it
+  useEffect(() => {
+    if (hasExplicitProduct) {
+      sessionStorage.setItem('lastProduct', isTrading ? 'trading' : 'booking')
+    }
+  }, [hasExplicitProduct, isTrading])
+
+  const currentProduct: Product = hasExplicitProduct
+    ? (isTrading ? 'trading' : 'booking')
+    : ((typeof window !== 'undefined' && sessionStorage.getItem('lastProduct')) as Product) || 'booking'
   const currentLabel = products.find((p) => p.key === currentProduct)!.label
 
   const isActive = (path: string) => {
@@ -164,20 +177,35 @@ export default function Header() {
         </span>
       </Link>
       {session?.user.role === 'ADMIN' && (
-        <Link
-          href="/trading/admin"
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-            isActive('/trading/admin') ? 'bg-red-50 text-red-800' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            Admin
-          </span>
-        </Link>
+        <>
+          <Link
+            href="/trading/admin"
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              isActive('/trading/admin') && !isActive('/trading/admin/courses') ? 'bg-red-50 text-red-800' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Admin
+            </span>
+          </Link>
+          <Link
+            href="/trading/admin/courses"
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              isActive('/trading/admin/courses') ? 'bg-red-50 text-red-800' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              Courses
+            </span>
+          </Link>
+        </>
       )}
     </>
   )
