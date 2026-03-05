@@ -1,6 +1,7 @@
 'use client'
 
 import Header from '@/components/layout/Header'
+import WelcomeModal from '@/components/onboarding/WelcomeModal'
 import { ToastProvider } from '@/components/ui/Toast'
 
 export default function TradingLayout({
@@ -13,6 +14,7 @@ export default function TradingLayout({
       <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
         <Header />
         <main className="flex-1 min-h-0 overflow-hidden">{children}</main>
+        <WelcomeModal />
       </div>
     </ToastProvider>
   )

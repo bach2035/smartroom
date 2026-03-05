@@ -14,6 +14,7 @@ CREATE TABLE users (
   student_class VARCHAR(100),
   student_id VARCHAR(100),
   facebook_link VARCHAR(500),
+  onboarding_completed BOOLEAN DEFAULT true,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

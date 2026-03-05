@@ -42,10 +42,26 @@ export default function MyMatchesClient() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
           </svg>
           <p className="text-slate-600 font-medium mb-1">No matches yet</p>
-          <p className="text-sm text-slate-400 mb-4">Browse listings and propose a trade to get started.</p>
-          <Link href="/trading" className="btn btn-primary">
-            Browse Listings
-          </Link>
+          <p className="text-sm text-slate-400 mb-5">Here&apos;s how to get your first match:</p>
+          <div className="inline-flex flex-col gap-3 text-left mb-6">
+            <div className="flex items-center gap-3">
+              <span className="w-7 h-7 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-xs font-bold shrink-0">1</span>
+              <span className="text-sm text-slate-600">Create a listing with courses you have & want</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="w-7 h-7 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-xs font-bold shrink-0">2</span>
+              <span className="text-sm text-slate-600">Check &ldquo;Suggested for You&rdquo; on the Browse page</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="w-7 h-7 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-xs font-bold shrink-0">3</span>
+              <span className="text-sm text-slate-600">Propose a trade to a compatible listing</span>
+            </div>
+          </div>
+          <div>
+            <Link href="/trading" className="btn btn-primary">
+              Browse Listings
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="space-y-2">

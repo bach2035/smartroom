@@ -289,9 +289,9 @@ export default function BookingList() {
       </div>
 
       {filteredBookings.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
+        <div className="text-center py-16">
           <svg
-            className="w-12 h-12 mx-auto mb-4 text-gray-300"
+            className="w-16 h-16 mx-auto mb-4 text-slate-300"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -299,18 +299,44 @@ export default function BookingList() {
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
-              strokeWidth={2}
+              strokeWidth={1.5}
               d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
             />
           </svg>
-          <p>{hasActiveFilters || filter !== 'all' ? 'No bookings match your filters' : 'No bookings found'}</p>
-          {(hasActiveFilters || filter !== 'all') && (
-            <button
-              onClick={() => { setFilter('all'); setSearchQuery(''); setDateFilter(''); setBuildingFilter('') }}
-              className="mt-2 text-sm text-red-700 hover:text-red-900 font-medium transition-colors"
-            >
-              Clear all filters
-            </button>
+          {hasActiveFilters || filter !== 'all' ? (
+            <>
+              <p className="text-slate-600 font-medium mb-1">No bookings match your filters</p>
+              <button
+                onClick={() => { setFilter('all'); setSearchQuery(''); setDateFilter(''); setBuildingFilter('') }}
+                className="mt-2 text-sm text-red-700 hover:text-red-900 font-medium transition-colors"
+              >
+                Clear all filters
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-slate-600 font-medium mb-1">No bookings yet</p>
+              <p className="text-sm text-slate-400 mb-5">Book your first room in 3 easy steps:</p>
+              <div className="inline-flex flex-col gap-3 text-left mb-6">
+                <div className="flex items-center gap-3">
+                  <span className="w-7 h-7 rounded-full bg-red-100 text-red-700 flex items-center justify-center text-xs font-bold shrink-0">1</span>
+                  <span className="text-sm text-slate-600">Browse the interactive floor map</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="w-7 h-7 rounded-full bg-red-100 text-red-700 flex items-center justify-center text-xs font-bold shrink-0">2</span>
+                  <span className="text-sm text-slate-600">Select an available room and pick a time</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="w-7 h-7 rounded-full bg-red-100 text-red-700 flex items-center justify-center text-xs font-bold shrink-0">3</span>
+                  <span className="text-sm text-slate-600">Submit your booking for admin approval</span>
+                </div>
+              </div>
+              <div>
+                <a href="/map" className="btn btn-primary">
+                  Browse Rooms
+                </a>
+              </div>
+            </>
           )}
         </div>
       ) : (

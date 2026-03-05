@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
         email,
         password: hashedPassword,
         full_name: fullName,
+        onboarding_completed: false,
       })
       .select('id, username, email, full_name, role')
       .single()

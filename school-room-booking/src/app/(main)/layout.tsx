@@ -1,4 +1,5 @@
 import Header from '@/components/layout/Header'
+import WelcomeModal from '@/components/onboarding/WelcomeModal'
 
 export default function MainLayout({
   children,
@@ -9,6 +10,7 @@ export default function MainLayout({
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main>{children}</main>
+      <WelcomeModal />
     </div>
   )
 }

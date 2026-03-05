@@ -112,6 +112,7 @@ export default function Header() {
     <>
       <Link
         href="/map"
+        data-tour="nav-book"
         className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
           isActive('/map') ? 'bg-red-50 text-red-800' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
         }`}
@@ -125,6 +126,7 @@ export default function Header() {
       </Link>
       <Link
         href="/bookings"
+        data-tour="nav-my-bookings"
         className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
           isActive('/bookings') ? 'bg-red-50 text-red-800' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
         }`}
@@ -138,6 +140,7 @@ export default function Header() {
       </Link>
       <Link
         href="/reports"
+        data-tour="nav-my-reports"
         className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
           isActive('/reports') ? 'bg-red-50 text-red-800' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
         }`}
@@ -188,6 +191,7 @@ export default function Header() {
     <>
       <Link
         href="/trading"
+        data-tour="nav-browse"
         className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
           isTradingBrowse
             ? 'bg-red-50 text-red-800'
@@ -203,6 +207,7 @@ export default function Header() {
       </Link>
       <Link
         href="/trading/my-listings"
+        data-tour="nav-my-listings"
         className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
           isActive('/trading/my-listings') ? 'bg-red-50 text-red-800' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
         }`}
@@ -216,6 +221,7 @@ export default function Header() {
       </Link>
       <Link
         href="/trading/matches"
+        data-tour="nav-my-matches"
         className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
           isActive('/trading/matches') ? 'bg-red-50 text-red-800' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
         }`}
@@ -262,6 +268,7 @@ export default function Header() {
                   <div className="hidden sm:block w-px h-6 bg-slate-200" />
                   <div className="relative" ref={dropdownRef}>
                     <button
+                      data-tour="product-switcher"
                       onClick={() => setDropdownOpen(!dropdownOpen)}
                       className={`flex items-center gap-2 pl-3 pr-2.5 py-1.5 rounded-full text-sm font-medium border transition-all ${
                         dropdownOpen

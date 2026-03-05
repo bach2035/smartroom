@@ -169,10 +169,26 @@ export default function MyListingsClient() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
           <p className="text-slate-600 font-medium mb-1">No listings yet</p>
-          <p className="text-sm text-slate-400 mb-4">Create your first listing to start trading courses.</p>
-          <button onClick={() => setShowCreateModal(true)} className="btn btn-primary">
-            Create Your First Listing
-          </button>
+          <p className="text-sm text-slate-400 mb-5">Start trading courses in a few steps:</p>
+          <div className="inline-flex flex-col gap-3 text-left mb-6">
+            <div className="flex items-center gap-3">
+              <span className="w-7 h-7 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-xs font-bold shrink-0">1</span>
+              <span className="text-sm text-slate-600">List the courses you have and want</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="w-7 h-7 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-xs font-bold shrink-0">2</span>
+              <span className="text-sm text-slate-600">Get matched with compatible traders</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="w-7 h-7 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-xs font-bold shrink-0">3</span>
+              <span className="text-sm text-slate-600">Propose a trade, chat, and complete the swap</span>
+            </div>
+          </div>
+          <div>
+            <button onClick={() => setShowCreateModal(true)} className="btn btn-primary">
+              Create Your First Listing
+            </button>
+          </div>
         </div>
       ) : (
         <div className="space-y-2">
