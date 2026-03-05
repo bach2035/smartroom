@@ -1,35 +1,32 @@
-const EMBEDDING_MODEL = 'sentence-transformers/all-MiniLM-L6-v2'
-const HF_API_URL = `https://api-inference.huggingface.co/pipeline/feature-extraction/${EMBEDDING_MODEL}`
+import { KNOWLEDGE_CHUNKS } from '@/lib/knowledge-base'
 
-export async function getEmbedding(text: string): Promise<number[]> {
-  const res = await fetch(HF_API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ inputs: text, options: { wait_for_model: true } }),
+/**
+ * Simple keyword-based search over knowledge chunks.
+ * No external API needed — works offline and instantly.
+ */
+export function findRelevantChunks(query: string, maxResults = 4): string[] {
+  const queryWords = query
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((w) => w.length > 2)
+
+  const scored = KNOWLEDGE_CHUNKS.map((chunk) => {
+    const text = `${chunk.topic} ${chunk.content}`.toLowerCase()
+    let score = 0
+    for (const word of queryWords) {
+      if (text.includes(word)) score++
+    }
+    // Boost for topic match
+    const topicText = chunk.topic.toLowerCase()
+    for (const word of queryWords) {
+      if (topicText.includes(word)) score += 2
+    }
+    return { content: chunk.content, score }
   })
 
-  if (!res.ok) {
-    const error = await res.text()
-    throw new Error(`Embedding API error: ${res.status} ${error}`)
-  }
-
-  const embedding = await res.json()
-  return embedding as number[]
+  return scored
+    .filter((s) => s.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, maxResults)
+    .map((s) => s.content)
 }
-
-export async function getEmbeddings(texts: string[]): Promise<number[][]> {
-  const res = await fetch(HF_API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ inputs: texts, options: { wait_for_model: true } }),
-  })
-
-  if (!res.ok) {
-    const error = await res.text()
-    throw new Error(`Embedding API error: ${res.status} ${error}`)
-  }
-
-  return await res.json()
-}
-
-export const EMBEDDING_DIMENSIONS = 384

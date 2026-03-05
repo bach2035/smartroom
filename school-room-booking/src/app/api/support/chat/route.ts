@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
-import { getEmbedding } from '@/lib/embeddings'
+import { KNOWLEDGE_CHUNKS } from '@/lib/knowledge-base'
 import Groq from 'groq-sdk'
 
 const SYSTEM_PROMPT = `You are the support assistant for "Smart School" — a university web app.
@@ -12,30 +11,16 @@ IMPORTANT RULES:
 - If the context does not contain the answer, say: "I'm not sure about that. Please contact your admin for help."
 - NEVER invent or guess features, buttons, or pages that are not in the context.
 - Match the user's language (Vietnamese or English).
-- Keep answers short and clear. Use step-by-step format for "how to" questions.
+- Keep answers short and clear.
+- For "how to" questions, use numbered steps (1. 2. 3.).
+- Use **bold** for button names, page names, and important terms.
+- Use bullet points (- ) for listing multiple items.
 - Be friendly and helpful.`
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || '' })
 
-async function findRelevantContext(query: string): Promise<string> {
-  try {
-    const embedding = await getEmbedding(query)
-
-    const { data, error } = await supabaseAdmin.rpc('match_support_knowledge', {
-      query_embedding: JSON.stringify(embedding),
-      match_threshold: 0.3,
-      match_count: 4,
-    })
-
-    if (error || !data?.length) {
-      return ''
-    }
-
-    return data.map((d: { content: string }) => d.content).join('\n\n')
-  } catch (error) {
-    console.error('RAG search error:', error)
-    return ''
-  }
+function getAllContext(): string {
+  return KNOWLEDGE_CHUNKS.map((c) => c.content).join('\n\n')
 }
 
 export async function POST(request: NextRequest) {
@@ -54,12 +39,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 })
     }
 
-    // RAG: find relevant knowledge chunks
-    const context = await findRelevantContext(message)
-
-    const systemMessage = context
-      ? `${SYSTEM_PROMPT}\n\nCONTEXT (use ONLY this to answer):\n${context}`
-      : `${SYSTEM_PROMPT}\n\nNo relevant context found. Tell the user you're not sure and suggest contacting an admin.`
+    const context = getAllContext()
+    const systemMessage = `${SYSTEM_PROMPT}\n\nCONTEXT (use ONLY this to answer):\n${context}`
 
     const messages = [
       { role: 'system' as const, content: systemMessage },

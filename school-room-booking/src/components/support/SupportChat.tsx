@@ -8,6 +8,62 @@ interface Message {
   content: string
 }
 
+function FormattedMessage({ content }: { content: string }) {
+  const lines = content.split('\n')
+  const elements: React.ReactNode[] = []
+  let listItems: React.ReactNode[] = []
+  let listType: 'ul' | 'ol' | null = null
+
+  function flushList() {
+    if (listItems.length > 0 && listType) {
+      const Tag = listType
+      elements.push(<Tag key={`list-${elements.length}`} className={`${listType === 'ol' ? 'list-decimal' : 'list-disc'} pl-4 space-y-0.5`}>{listItems}</Tag>)
+      listItems = []
+      listType = null
+    }
+  }
+
+  function formatInline(text: string): React.ReactNode[] {
+    const parts: React.ReactNode[] = []
+    const regex = /\*\*(.+?)\*\*/g
+    let lastIndex = 0
+    let match
+    while ((match = regex.exec(text)) !== null) {
+      if (match.index > lastIndex) parts.push(text.slice(lastIndex, match.index))
+      parts.push(<strong key={match.index}>{match[1]}</strong>)
+      lastIndex = regex.lastIndex
+    }
+    if (lastIndex < text.length) parts.push(text.slice(lastIndex))
+    return parts
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    const bulletMatch = line.match(/^[-•]\s+(.+)/)
+    const numberedMatch = line.match(/^\d+[.)]\s+(.+)/)
+
+    if (bulletMatch) {
+      if (listType !== 'ul') flushList()
+      listType = 'ul'
+      listItems.push(<li key={`li-${i}`}>{formatInline(bulletMatch[1])}</li>)
+    } else if (numberedMatch) {
+      if (listType !== 'ol') flushList()
+      listType = 'ol'
+      listItems.push(<li key={`li-${i}`}>{formatInline(numberedMatch[1])}</li>)
+    } else {
+      flushList()
+      if (line.trim() === '') {
+        elements.push(<div key={`br-${i}`} className="h-1.5" />)
+      } else {
+        elements.push(<p key={`p-${i}`}>{formatInline(line)}</p>)
+      }
+    }
+  }
+  flushList()
+
+  return <div className="space-y-1">{elements}</div>
+}
+
 const SUGGESTIONS = [
   'How do I book a room?',
   'How do I create a trade listing?',
@@ -139,7 +195,7 @@ export default function SupportChat() {
                       : 'bg-slate-100 text-slate-700 rounded-bl-sm'
                   }`}
                 >
-                  {msg.content}
+                  {msg.role === 'assistant' ? <FormattedMessage content={msg.content} /> : msg.content}
                 </div>
               </div>
             ))}
