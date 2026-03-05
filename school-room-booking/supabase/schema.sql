@@ -184,9 +184,12 @@ CREATE TYPE trade_match_status AS ENUM ('PENDING', 'ACCEPTED', 'REJECTED', 'COMP
 CREATE TYPE trade_course_type AS ENUM ('HAVE', 'WANT');
 
 -- Trade listings
+CREATE TYPE trade_listing_type AS ENUM ('TRADE', 'GIVEAWAY');
+
 CREATE TABLE trade_listings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  listing_type trade_listing_type DEFAULT 'TRADE',
   status trade_listing_status DEFAULT 'OPEN',
   notes TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

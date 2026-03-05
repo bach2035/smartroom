@@ -15,7 +15,19 @@ export async function GET(
 
     const { id } = await params
 
-    // Fetch current listing's courses
+    // Fetch current listing with its type and courses
+    const { data: myListing } = await supabaseAdmin
+      .from('trade_listings')
+      .select('user_id, listing_type')
+      .eq('id', id)
+      .single()
+
+    if (!myListing) {
+      return NextResponse.json({ matches: [] })
+    }
+
+    const isGiveaway = myListing.listing_type === 'GIVEAWAY'
+
     const { data: myCourses } = await supabaseAdmin
       .from('trade_listing_courses')
       .select('course_code, type')
@@ -31,13 +43,6 @@ export async function GET(
     const myWantCodes = myCourses
       .filter((c) => c.type === 'WANT')
       .map((c) => c.course_code.toLowerCase())
-
-    // Get the listing owner's ID to find all their listings
-    const { data: myListing } = await supabaseAdmin
-      .from('trade_listings')
-      .select('user_id')
-      .eq('id', id)
-      .single()
 
     // Find listing IDs already in active matches with this user
     let excludeListingIds: string[] = []
@@ -66,7 +71,12 @@ export async function GET(
       }
     }
 
-    // Fetch all other OPEN listings with courses
+    // Giveaways don't use matching — they appear on the browse page directly
+    if (isGiveaway) {
+      return NextResponse.json({ matches: [] })
+    }
+
+    // Fetch all other OPEN TRADE listings with courses (exclude own + giveaways)
     let listingsQuery = supabaseAdmin
       .from('trade_listings')
       .select(`
@@ -75,7 +85,9 @@ export async function GET(
         courses:trade_listing_courses(*)
       `)
       .eq('status', 'OPEN')
+      .eq('listing_type', 'TRADE')
       .neq('id', id)
+      .neq('user_id', myListing.user_id)
 
     if (excludeListingIds.length > 0) {
       listingsQuery = listingsQuery.not('id', 'in', `(${excludeListingIds.join(',')})`)
@@ -87,59 +99,57 @@ export async function GET(
       return NextResponse.json({ matches: [] })
     }
 
-    // Match: listing B has a HAVE that matches my WANT, AND B has a WANT that matches my HAVE
+    function transformCourses(courses: Record<string, unknown>[], type: string) {
+      return courses
+        .filter((c) => c.type === type)
+        .map((c) => ({
+          id: c.id,
+          listingId: c.listing_id,
+          courseName: c.course_name,
+          courseCode: c.course_code,
+          classCode: c.class_code,
+          section: c.section,
+          schedule: c.schedule,
+          credits: c.credits,
+          type: c.type,
+        }))
+    }
+
+    // Giveaway: any user can request, no course matching needed
+    // Trade: listing B has a HAVE matching my WANT AND B has a WANT matching my HAVE
     const matched = allListings
       .map((listing) => {
-        const courses = listing.courses || []
-        const theirHaveCodes = courses
-          .filter((c: Record<string, unknown>) => c.type === 'HAVE')
-          .map((c: Record<string, unknown>) => (c.course_code as string).toLowerCase())
-        const theirWantCodes = courses
-          .filter((c: Record<string, unknown>) => c.type === 'WANT')
-          .map((c: Record<string, unknown>) => (c.course_code as string).toLowerCase())
-
-        const iWantTheyHave = myWantCodes.filter((code) => theirHaveCodes.includes(code)).length
-        const theyWantIHave = myHaveCodes.filter((code) => theirWantCodes.includes(code)).length
-
-        if (iWantTheyHave === 0 || theyWantIHave === 0) return null
-
+        const courses = (listing.courses || []) as Record<string, unknown>[]
         const user = listing.user as unknown as Record<string, unknown> | null
+        let matchScore = 1
+
+        if (!isGiveaway) {
+          const theirHaveCodes = courses
+            .filter((c) => c.type === 'HAVE')
+            .map((c) => (c.course_code as string).toLowerCase())
+          const theirWantCodes = courses
+            .filter((c) => c.type === 'WANT')
+            .map((c) => (c.course_code as string).toLowerCase())
+
+          const iWantTheyHave = myWantCodes.filter((code) => theirHaveCodes.includes(code)).length
+          const theyWantIHave = myHaveCodes.filter((code) => theirWantCodes.includes(code)).length
+
+          if (iWantTheyHave === 0 || theyWantIHave === 0) return null
+          matchScore = iWantTheyHave + theyWantIHave
+        }
 
         return {
           id: listing.id,
           userId: listing.user_id,
+          listingType: (listing.listing_type as string) || 'TRADE',
           status: listing.status,
           notes: listing.notes,
           createdAt: listing.created_at,
           updatedAt: listing.updated_at,
           userName: user?.full_name || null,
-          matchScore: iWantTheyHave + theyWantIHave,
-          haveCourses: courses
-            .filter((c: Record<string, unknown>) => c.type === 'HAVE')
-            .map((c: Record<string, unknown>) => ({
-              id: c.id,
-              listingId: c.listing_id,
-              courseName: c.course_name,
-              courseCode: c.course_code,
-              classCode: c.class_code,
-              section: c.section,
-              schedule: c.schedule,
-              credits: c.credits,
-              type: c.type,
-            })),
-          wantCourses: courses
-            .filter((c: Record<string, unknown>) => c.type === 'WANT')
-            .map((c: Record<string, unknown>) => ({
-              id: c.id,
-              listingId: c.listing_id,
-              courseName: c.course_name,
-              courseCode: c.course_code,
-              classCode: c.class_code,
-              section: c.section,
-              schedule: c.schedule,
-              credits: c.credits,
-              type: c.type,
-            })),
+          matchScore,
+          haveCourses: transformCourses(courses, 'HAVE'),
+          wantCourses: transformCourses(courses, 'WANT'),
         }
       })
       .filter(Boolean)

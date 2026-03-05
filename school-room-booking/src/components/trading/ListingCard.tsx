@@ -27,7 +27,12 @@ export default function ListingCard({ listing, showStatus, onClick }: ListingCar
     <div className="flex items-center gap-4 px-4 py-3 rounded-lg border border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 transition-colors">
       {/* User + time */}
       <div className="w-32 shrink-0">
-        <p className="font-medium text-slate-800 text-sm truncate">{listing.userName || 'Anonymous'}</p>
+        <div className="flex items-center gap-1.5">
+          <p className="font-medium text-slate-800 text-sm truncate">{listing.userName || 'Anonymous'}</p>
+          {listing.listingType === 'GIVEAWAY' && (
+            <span className="shrink-0 px-1.5 py-0.5 text-[10px] font-semibold rounded bg-emerald-100 text-emerald-700">FREE</span>
+          )}
+        </div>
         <p className="text-xs text-slate-400">{relativeTime(listing.createdAt)}</p>
       </div>
 
@@ -35,11 +40,11 @@ export default function ListingCard({ listing, showStatus, onClick }: ListingCar
       <div className="flex-1 min-w-0 text-sm space-y-0.5">
         {have && (
           <p className="truncate">
-            <span className="text-xs font-medium text-slate-400 mr-1.5">HAS</span>
-            <span className="text-green-700">{have}</span>
+            <span className="text-xs font-medium text-slate-400 mr-1.5">{listing.listingType === 'GIVEAWAY' ? 'GIVING' : 'HAS'}</span>
+            <span className={listing.listingType === 'GIVEAWAY' ? 'text-emerald-700' : 'text-green-700'}>{have}</span>
           </p>
         )}
-        {want && (
+        {want && listing.listingType !== 'GIVEAWAY' && (
           <p className="truncate">
             <span className="text-xs font-medium text-slate-400 mr-1.5">WANTS</span>
             <span className="text-blue-700">{want}</span>

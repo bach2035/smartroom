@@ -16,6 +16,7 @@ interface ListingDetail {
   id: string
   userId: string
   status: string
+  listingType: 'TRADE' | 'GIVEAWAY'
   notes: string | null
   createdAt: string
   userName: string | null
@@ -91,12 +92,13 @@ export default function MyListingsClient() {
     }
   }
 
-  const handleCreate = async (data: { notes: string; haveCourses: { courseName: string; courseCode: string; section: string; schedule: string; credits: string }[]; wantCourses: { courseName: string; courseCode: string; section: string; schedule: string; credits: string }[] }) => {
+  const handleCreate = async (data: { notes: string; haveCourses: { courseName: string; courseCode: string; section: string; schedule: string; credits: string }[]; wantCourses: { courseName: string; courseCode: string; section: string; schedule: string; credits: string }[]; listingType?: string }) => {
     const res = await fetch('/api/trading/listings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         notes: data.notes,
+        listingType: data.listingType || 'TRADE',
         haveCourses: data.haveCourses.map((c) => ({ ...c, credits: c.credits ? parseInt(c.credits) : null })),
         wantCourses: data.wantCourses.map((c) => ({ ...c, credits: c.credits ? parseInt(c.credits) : null })),
       }),
@@ -261,7 +263,9 @@ export default function MyListingsClient() {
             {/* Have courses */}
             {selectedListing.haveCourses.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-green-700 mb-2">Courses to Trade Away</h3>
+                <h3 className="text-sm font-semibold text-green-700 mb-2">
+                  {selectedListing.listingType === 'GIVEAWAY' ? 'Course to Give Away' : 'Courses to Trade Away'}
+                </h3>
                 <div className="flex flex-wrap gap-2">
                   {selectedListing.haveCourses.map((c) => (
                     <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="HAVE" classCode={c.classCode} section={c.section} schedule={c.schedule} />
@@ -293,12 +297,14 @@ export default function MyListingsClient() {
             {/* Own listing actions */}
             {selectedListing.isOwn && selectedListing.status === 'OPEN' && (
               <div className="flex gap-3 border-t border-slate-100 pt-4">
-                <button
-                  onClick={() => setShowMatches(!showMatches)}
-                  className="btn btn-primary"
-                >
-                  {showMatches ? 'Hide Matches' : 'Find Matches'}
-                </button>
+                {selectedListing.listingType !== 'GIVEAWAY' && (
+                  <button
+                    onClick={() => setShowMatches(!showMatches)}
+                    className="btn btn-primary"
+                  >
+                    {showMatches ? 'Hide Matches' : 'Find Matches'}
+                  </button>
+                )}
                 <button
                   onClick={() => setShowEditModal(true)}
                   className="btn btn-secondary"
@@ -314,11 +320,11 @@ export default function MyListingsClient() {
               </div>
             )}
 
-            {/* Matching listings */}
-            {showMatches && (
+            {/* Matching listings (trade only) */}
+            {showMatches && selectedListing.listingType !== 'GIVEAWAY' && (
               <div>
                 <h3 className="text-lg font-bold text-slate-800 mb-4">Matching Listings</h3>
-                <MatchingListings listingId={selectedListing.id} />
+                <MatchingListings listingId={selectedListing.id} listingType={selectedListing.listingType} />
               </div>
             )}
           </div>
@@ -335,6 +341,7 @@ export default function MyListingsClient() {
         >
           <ListingForm
             initialNotes={selectedListing.notes || ''}
+            initialListingType={selectedListing.listingType}
             initialHaveCourses={selectedListing.haveCourses.map((c) => ({
               courseName: c.courseName,
               courseCode: c.courseCode,

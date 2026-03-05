@@ -16,7 +16,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       supabaseAdmin
         .from('trade_listings')
         .select(`
-          id, status, notes, created_at, updated_at,
+          id, listing_type, status, notes, created_at, updated_at,
           user:users!trade_listings_user_id_fkey(id, full_name, username, email, student_class, student_id),
           courses:trade_listing_courses(id, course_name, course_code, section, schedule, credits, type)
         `)
@@ -54,6 +54,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
     return NextResponse.json({
       id: listing.id,
+      listingType: (listing.listing_type as string) || 'TRADE',
       status: listing.status,
       notes: listing.notes,
       createdAt: listing.created_at,

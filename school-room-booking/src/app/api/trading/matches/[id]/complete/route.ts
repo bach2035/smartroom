@@ -35,9 +35,14 @@ export async function PATCH(
     }
 
     const listingA = match.listing_a as unknown as Record<string, unknown>
-    const listingB = match.listing_b as unknown as Record<string, unknown>
+    const listingB = match.listing_b as unknown as Record<string, unknown> | null
+    const isGiveawayRequest = !match.listing_b_id
+
+    // Determine which side this user is
     const isA = listingA?.user_id === session.user.id
-    const isB = listingB?.user_id === session.user.id
+    const isB = isGiveawayRequest
+      ? match.initiated_by === session.user.id
+      : listingB?.user_id === session.user.id
 
     if (!isA && !isB) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
@@ -65,13 +70,16 @@ export async function PATCH(
       .update(update)
       .eq('id', id)
 
-    const otherUserId = isA ? listingB?.user_id as string : listingA?.user_id as string
+    const otherUserId = isA
+      ? (isGiveawayRequest ? match.initiated_by : listingB?.user_id as string)
+      : listingA?.user_id as string
 
     if (bothConfirmed) {
+      const listingIds = [match.listing_a_id, match.listing_b_id].filter(Boolean)
       await supabaseAdmin
         .from('trade_listings')
         .update({ status: 'COMPLETED', updated_at: now })
-        .in('id', [match.listing_a_id, match.listing_b_id])
+        .in('id', listingIds)
 
       // Notify both parties
       const myUserId = session.user.id
@@ -135,9 +143,12 @@ export async function DELETE(
     }
 
     const listingA = match.listing_a as unknown as Record<string, unknown>
-    const listingB = match.listing_b as unknown as Record<string, unknown>
+    const listingB = match.listing_b as unknown as Record<string, unknown> | null
+    const isGiveawayRequest = !match.listing_b_id
     const isA = listingA?.user_id === session.user.id
-    const isB = listingB?.user_id === session.user.id
+    const isB = isGiveawayRequest
+      ? match.initiated_by === session.user.id
+      : listingB?.user_id === session.user.id
 
     if (!isA && !isB) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 403 })

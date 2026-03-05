@@ -14,6 +14,7 @@ import { useToast } from '@/components/ui/Toast'
 interface ListingDetail {
   id: string
   userId: string
+  listingType: 'TRADE' | 'GIVEAWAY'
   status: string
   notes: string | null
   createdAt: string
@@ -116,7 +117,7 @@ export default function ListingDetailClient({ listingId }: { listingId: string }
 
         {listing.haveCourses.length > 0 && (
           <div className="mb-4">
-            <h2 className="text-sm font-semibold text-green-700 mb-2">Courses to Trade Away</h2>
+            <h2 className="text-sm font-semibold text-green-700 mb-2">{listing.listingType === 'GIVEAWAY' ? 'Course to Give Away' : 'Courses to Trade Away'}</h2>
             <div className="flex flex-wrap gap-2">
               {listing.haveCourses.map((c) => (
                 <CourseTag
@@ -161,12 +162,14 @@ export default function ListingDetailClient({ listingId }: { listingId: string }
 
         {listing.isOwn && listing.status === 'OPEN' && (
           <div className="flex gap-3 mt-6 border-t pt-4">
-            <button
-              onClick={() => setShowMatches(!showMatches)}
-              className="btn btn-primary"
-            >
-              {showMatches ? 'Hide Matches' : 'Find Matches'}
-            </button>
+            {listing.listingType !== 'GIVEAWAY' && (
+              <button
+                onClick={() => setShowMatches(!showMatches)}
+                className="btn btn-primary"
+              >
+                {showMatches ? 'Hide Matches' : 'Find Matches'}
+              </button>
+            )}
             <button
               onClick={() => setShowEditModal(true)}
               className="btn btn-secondary"
@@ -185,16 +188,18 @@ export default function ListingDetailClient({ listingId }: { listingId: string }
         {!listing.isOwn && listing.status === 'OPEN' && (
           <div className="mt-6 border-t pt-4">
             <p className="text-sm text-slate-500">
-              Want to trade? Create your own listing and find matches, or propose a trade from your listing page.
+              {listing.listingType === 'GIVEAWAY'
+                ? 'Interested? Browse giveaways on the trading page and request this course directly.'
+                : 'Want to trade? Create your own listing and find matches, or propose a trade from your listing page.'}
             </p>
           </div>
         )}
       </div>
 
-      {showMatches && (
+      {showMatches && listing.listingType !== 'GIVEAWAY' && (
         <div className="mt-6">
           <h2 className="text-lg font-bold text-slate-800 mb-4">Matching Listings</h2>
-          <MatchingListings listingId={listingId} />
+          <MatchingListings listingId={listingId} listingType={listing?.listingType} />
         </div>
       )}
 
@@ -208,6 +213,7 @@ export default function ListingDetailClient({ listingId }: { listingId: string }
         >
           <ListingForm
             initialNotes={listing.notes || ''}
+            initialListingType={listing.listingType}
             initialHaveCourses={listing.haveCourses.map((c) => ({
               courseName: c.courseName,
               courseCode: c.courseCode,

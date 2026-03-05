@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     let query = supabaseAdmin
       .from('trade_listings')
       .select(`
-        id, status, notes, created_at, updated_at,
+        id, listing_type, status, notes, created_at, updated_at,
         user:users!trade_listings_user_id_fkey(id, full_name, username, email, student_class, student_id),
         courses:trade_listing_courses(id, course_name, course_code, class_code, section, schedule, credits, type)
       `)
@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
         const courses = (l.courses || []) as unknown as { id: string; course_name: string; course_code: string; class_code: string | null; section: string | null; schedule: string | null; credits: number | null; type: string }[]
         return {
           id: l.id,
+          listingType: (l.listing_type as string) || 'TRADE',
           status: l.status,
           notes: l.notes,
           createdAt: l.created_at,

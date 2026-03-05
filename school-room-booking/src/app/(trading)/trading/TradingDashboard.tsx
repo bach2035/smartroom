@@ -16,6 +16,7 @@ import { useTradingStore } from '@/store/tradingStore'
 interface ListingDetail {
   id: string
   userId: string
+  listingType: 'TRADE' | 'GIVEAWAY'
   status: string
   notes: string | null
   createdAt: string
@@ -34,6 +35,7 @@ export default function TradingDashboard() {
   const [listings, setListings] = useState<TradeListing[]>([])
   const [loading, setLoading] = useState(true)
   const [isFirstVisit, setIsFirstVisit] = useState(false)
+  const [activeTab, setActiveTab] = useState<'TRADE' | 'GIVEAWAY'>('TRADE')
   const { searchQuery, courseCodeFilter } = useTradingStore()
   const { showToast } = useToast()
 
@@ -73,6 +75,7 @@ export default function TradingDashboard() {
       const params = new URLSearchParams()
       if (searchQuery) params.set('search', searchQuery)
       if (courseCodeFilter) params.set('courseCode', courseCodeFilter)
+      params.set('listingType', activeTab)
       const res = await fetch(`/api/trading/listings?${params}`)
       if (res.ok) {
         const data = await res.json()
@@ -81,7 +84,7 @@ export default function TradingDashboard() {
     } finally {
       setLoading(false)
     }
-  }, [searchQuery, courseCodeFilter])
+  }, [searchQuery, courseCodeFilter, activeTab])
 
   // Fetch user's open listings + suggested matches
   const fetchMyOpenListings = useCallback(async () => {
@@ -93,7 +96,8 @@ export default function TradingDashboard() {
       setMyOpenListings(openOnes)
 
       if (!openOnes.length) return
-      const firstOpen = openOnes[0]
+      const firstOpen = openOnes.find((l: TradeListing) => l.listingType !== 'GIVEAWAY') || openOnes[0]
+      if (firstOpen.listingType === 'GIVEAWAY') return
       const matchRes = await fetch(`/api/trading/listings/${firstOpen.id}/matches`)
       if (matchRes.ok) {
         const matchData = await matchRes.json()
@@ -104,8 +108,28 @@ export default function TradingDashboard() {
     }
   }, [])
 
+  // Fetch already-requested giveaway IDs
+  const fetchRequestedGiveaways = useCallback(async () => {
+    try {
+      const res = await fetch('/api/trading/matches')
+      if (!res.ok) return
+      const data = await res.json()
+      const ids = new Set<string>()
+      for (const m of (data.matches || [])) {
+        // isGiveawayRequest + otherListing exists = I'm the requester viewing the giveaway
+        if (m.isGiveawayRequest && m.otherListing) {
+          ids.add(m.otherListing.id)
+        }
+      }
+      setRequestedGiveawayIds(ids)
+    } catch {
+      // Silently fail
+    }
+  }, [])
+
   useEffect(() => {
     fetchMyOpenListings()
+    fetchRequestedGiveaways()
   }, [fetchMyOpenListings])
 
   useEffect(() => {
@@ -140,15 +164,17 @@ export default function TradingDashboard() {
       setSelectedListing(null)
       setDetailError(null)
       setShowMatches(false)
+      setGiveawayMessage('')
     }
   }
 
-  const handleCreate = async (data: { notes: string; haveCourses: { courseName: string; courseCode: string; section: string; schedule: string; credits: string }[]; wantCourses: { courseName: string; courseCode: string; section: string; schedule: string; credits: string }[] }) => {
+  const handleCreate = async (data: { notes: string; haveCourses: { courseName: string; courseCode: string; section: string; schedule: string; credits: string }[]; wantCourses: { courseName: string; courseCode: string; section: string; schedule: string; credits: string }[]; listingType?: string }) => {
     const res = await fetch('/api/trading/listings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         notes: data.notes,
+        listingType: data.listingType || 'TRADE',
         haveCourses: data.haveCourses.map((c) => ({ ...c, credits: c.credits ? parseInt(c.credits) : null })),
         wantCourses: data.wantCourses.map((c) => ({ ...c, credits: c.credits ? parseInt(c.credits) : null })),
       }),
@@ -201,8 +227,38 @@ export default function TradingDashboard() {
     }
   }
 
+  // Giveaway request state
+  const [requestingGiveaway, setRequestingGiveaway] = useState(false)
+  const [giveawayMessage, setGiveawayMessage] = useState('')
+  const [requestedGiveawayIds, setRequestedGiveawayIds] = useState<Set<string>>(new Set())
+
   // Track which suggested listing we're proposing for (inline)
   const [proposingForId, setProposingForId] = useState<string | null>(null)
+
+  const handleRequestGiveaway = async (giveawayListingId: string) => {
+    setRequestingGiveaway(true)
+    try {
+      const res = await fetch('/api/trading/matches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          theirListingId: giveawayListingId,
+          message: giveawayMessage.trim() || undefined,
+        }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        showToast('Course requested successfully!', 'success')
+        setRequestedGiveawayIds((prev) => new Set(prev).add(giveawayListingId))
+        setSelectedListing(null)
+        setGiveawayMessage('')
+      } else {
+        showToast(data.error || 'Failed to request course', 'error')
+      }
+    } finally {
+      setRequestingGiveaway(false)
+    }
+  }
 
   const handleProposeTrade = async (myListingId: string, theirListingId: string) => {
     setProposing(true)
@@ -275,8 +331,42 @@ export default function TradingDashboard() {
         </button>
       </div>
 
-      {/* Suggested matches section */}
-      {suggestedMatches.length > 0 && !searchQuery && !courseCodeFilter && (
+      {/* Tabs */}
+      <div className="flex gap-1 mb-6 bg-slate-100 rounded-lg p-1">
+        <button
+          onClick={() => setActiveTab('TRADE')}
+          className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+            activeTab === 'TRADE'
+              ? 'bg-white text-slate-800 shadow-sm'
+              : 'text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <span className="flex items-center justify-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+            </svg>
+            Trading
+          </span>
+        </button>
+        <button
+          onClick={() => setActiveTab('GIVEAWAY')}
+          className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+            activeTab === 'GIVEAWAY'
+              ? 'bg-white text-slate-800 shadow-sm'
+              : 'text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <span className="flex items-center justify-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+            </svg>
+            Giveaways
+          </span>
+        </button>
+      </div>
+
+      {/* Suggested matches section (only for trading tab) */}
+      {activeTab === 'TRADE' && suggestedMatches.length > 0 && !searchQuery && !courseCodeFilter && (
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-3">
             <svg className="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
@@ -390,10 +480,20 @@ export default function TradingDashboard() {
       ) : listings.length === 0 ? (
         <div className="text-center py-16">
           <svg className="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+            {activeTab === 'GIVEAWAY' ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+            )}
           </svg>
-          <p className="text-slate-600 font-medium mb-1">No listings found</p>
-          <p className="text-sm text-slate-400 mb-4">Be the first to list a course you want to trade!</p>
+          <p className="text-slate-600 font-medium mb-1">
+            {activeTab === 'GIVEAWAY' ? 'No giveaways available' : 'No listings found'}
+          </p>
+          <p className="text-sm text-slate-400 mb-4">
+            {activeTab === 'GIVEAWAY'
+              ? 'No one is giving away courses right now. Check back later!'
+              : 'Be the first to list a course you want to trade!'}
+          </p>
           <button onClick={() => setShowCreateModal(true)} className="btn btn-primary">
             Create a Listing
           </button>
@@ -469,7 +569,9 @@ export default function TradingDashboard() {
             {/* Have courses */}
             {selectedListing.haveCourses.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-green-700 mb-2">Courses to Trade Away</h3>
+                <h3 className="text-sm font-semibold text-green-700 mb-2">
+                  {selectedListing.listingType === 'GIVEAWAY' ? 'Course to Give Away' : 'Courses to Trade Away'}
+                </h3>
                 <div className="flex flex-wrap gap-2">
                   {selectedListing.haveCourses.map((c) => (
                     <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="HAVE" classCode={c.classCode} section={c.section} schedule={c.schedule} />
@@ -501,12 +603,14 @@ export default function TradingDashboard() {
             {/* Own listing actions */}
             {selectedListing.isOwn && selectedListing.status === 'OPEN' && (
               <div className="flex gap-3 border-t border-slate-100 pt-4">
-                <button
-                  onClick={() => setShowMatches(!showMatches)}
-                  className="btn btn-primary"
-                >
-                  {showMatches ? 'Hide Matches' : 'Find Matches'}
-                </button>
+                {selectedListing.listingType !== 'GIVEAWAY' && (
+                  <button
+                    onClick={() => setShowMatches(!showMatches)}
+                    className="btn btn-primary"
+                  >
+                    {showMatches ? 'Hide Matches' : 'Find Matches'}
+                  </button>
+                )}
                 <button
                   onClick={() => setShowEditModal(true)}
                   className="btn btn-secondary"
@@ -522,12 +626,41 @@ export default function TradingDashboard() {
               </div>
             )}
 
+            {/* Request giveaway (non-owner) */}
+            {!selectedListing.isOwn && selectedListing.status === 'OPEN' && selectedListing.listingType === 'GIVEAWAY' && (
+              <div className="border-t border-slate-100 pt-4 space-y-3">
+                {requestedGiveawayIds.has(selectedListing.id) ? (
+                  <div className="flex items-center justify-center gap-2 py-3 text-green-700 font-medium">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Requested
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      className="form-input w-full text-sm"
+                      placeholder="Add a message with your request (optional)..."
+                      value={giveawayMessage}
+                      onChange={(e) => setGiveawayMessage(e.target.value)}
+                    />
+                    <button
+                      onClick={() => handleRequestGiveaway(selectedListing.id)}
+                      disabled={requestingGiveaway}
+                      className="btn btn-primary w-full"
+                    >
+                      {requestingGiveaway ? 'Requesting...' : 'Request This Course'}
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
 
-            {/* Matching listings */}
-            {showMatches && (
+            {/* Matching listings (trade only) */}
+            {showMatches && selectedListing.listingType !== 'GIVEAWAY' && (
               <div>
                 <h3 className="text-lg font-bold text-slate-800 mb-4">Matching Listings</h3>
-                <MatchingListings listingId={selectedListing.id} />
+                <MatchingListings listingId={selectedListing.id} listingType={selectedListing.listingType} />
               </div>
             )}
           </div>
@@ -544,6 +677,7 @@ export default function TradingDashboard() {
         >
           <ListingForm
             initialNotes={selectedListing.notes || ''}
+            initialListingType={selectedListing.listingType}
             initialHaveCourses={selectedListing.haveCourses.map((c) => ({
               courseName: c.courseName,
               courseCode: c.courseCode,

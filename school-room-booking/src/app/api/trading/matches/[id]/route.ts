@@ -29,7 +29,8 @@ export async function GET(
           *,
           user:users(full_name, email, student_class),
           courses:trade_listing_courses(*)
-        )
+        ),
+        initiator:users!initiated_by(full_name, email, student_class)
       `)
       .eq('id', id)
       .single()
@@ -38,17 +39,19 @@ export async function GET(
       return NextResponse.json({ error: 'Match not found' }, { status: 404 })
     }
 
-    // Verify user is a party to this match
     const listingA = match.listing_a as unknown as Record<string, unknown>
-    const listingB = match.listing_b as unknown as Record<string, unknown>
+    const listingB = match.listing_b as unknown as Record<string, unknown> | null
+    const isGiveawayRequest = !match.listing_b_id
+
+    // Verify user is a party to this match
     const isParty =
-      listingA?.user_id === session.user.id || listingB?.user_id === session.user.id
+      listingA?.user_id === session.user.id ||
+      listingB?.user_id === session.user.id ||
+      match.initiated_by === session.user.id
 
     if (!isParty) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
     }
-
-    const isA = listingA?.user_id === session.user.id
 
     function transformSide(listing: Record<string, unknown>) {
       const user = listing.user as unknown as Record<string, unknown> | null
@@ -56,6 +59,7 @@ export async function GET(
       return {
         id: listing.id,
         userId: listing.user_id,
+        listingType: (listing.listing_type as string) || 'TRADE',
         status: listing.status,
         notes: listing.notes,
         userName: (user?.full_name as string) || null,
@@ -78,18 +82,46 @@ export async function GET(
       }
     }
 
+    if (isGiveawayRequest) {
+      // Giveaway request: listing_a is the giveaway, no listing_b
+      const iAmOwner = listingA?.user_id === session.user.id
+      const initiator = match.initiator as unknown as Record<string, unknown> | null
+
+      return NextResponse.json({
+        match: {
+          id: match.id,
+          status: match.status,
+          initiatedBy: match.initiated_by,
+          isGiveawayRequest: true,
+          createdAt: match.created_at,
+          updatedAt: match.updated_at,
+          isInitiator: match.initiated_by === session.user.id,
+          completedByMe: iAmOwner ? !!match.completed_by_a : !!match.completed_by_b,
+          completedByOther: iAmOwner ? !!match.completed_by_b : !!match.completed_by_a,
+          myListing: iAmOwner ? transformSide(listingA) : null,
+          otherListing: iAmOwner ? null : transformSide(listingA),
+          requesterName: (initiator?.full_name as string) || null,
+          requesterEmail: (initiator?.email as string) || null,
+          requesterClass: (initiator?.student_class as string) || null,
+        },
+      })
+    }
+
+    const isA = listingA?.user_id === session.user.id
+
     return NextResponse.json({
       match: {
         id: match.id,
         status: match.status,
         initiatedBy: match.initiated_by,
+        isGiveawayRequest: false,
         createdAt: match.created_at,
         updatedAt: match.updated_at,
         isInitiator: match.initiated_by === session.user.id,
         completedByMe: isA ? !!match.completed_by_a : !!match.completed_by_b,
         completedByOther: isA ? !!match.completed_by_b : !!match.completed_by_a,
-        myListing: isA ? transformSide(listingA) : transformSide(listingB),
-        otherListing: isA ? transformSide(listingB) : transformSide(listingA),
+        myListing: isA ? transformSide(listingA) : transformSide(listingB!),
+        otherListing: isA ? transformSide(listingB!) : transformSide(listingA),
       },
     })
   } catch (error) {
@@ -140,8 +172,9 @@ export async function PATCH(
 
     // Verify user is a party
     const listingA = match.listing_a as unknown as Record<string, unknown>
-    const listingB = match.listing_b as unknown as Record<string, unknown>
-    if (listingA?.user_id !== session.user.id && listingB?.user_id !== session.user.id) {
+    const listingB = match.listing_b as unknown as Record<string, unknown> | null
+    const isParty = listingA?.user_id === session.user.id || listingB?.user_id === session.user.id
+    if (!isParty) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
     }
 
@@ -152,23 +185,28 @@ export async function PATCH(
       .update({ status: newStatus, updated_at: new Date().toISOString() })
       .eq('id', id)
 
-    // If accepted, update both listings to MATCHED
+    // If accepted, update listings to MATCHED (only existing ones)
     if (action === 'accept') {
+      const listingIds = [match.listing_a_id, match.listing_b_id].filter(Boolean)
       await supabaseAdmin
         .from('trade_listings')
         .update({ status: 'MATCHED', updated_at: new Date().toISOString() })
-        .in('id', [match.listing_a_id, match.listing_b_id])
+        .in('id', listingIds)
     }
+
+    const isGiveaway = !match.listing_b_id
 
     // Notify the initiator
     const notifType = action === 'accept' ? 'TRADE_PROPOSAL_ACCEPTED' : 'TRADE_PROPOSAL_REJECTED'
     createNotification({
       userId: match.initiated_by,
       type: notifType,
-      title: action === 'accept' ? 'Trade proposal accepted!' : 'Trade proposal rejected',
+      title: action === 'accept'
+        ? (isGiveaway ? 'Course request accepted!' : 'Trade proposal accepted!')
+        : (isGiveaway ? 'Course request rejected' : 'Trade proposal rejected'),
       message: action === 'accept'
-        ? `${session.user.name || 'The other party'} accepted your trade proposal. Start chatting now!`
-        : `${session.user.name || 'The other party'} rejected your trade proposal.`,
+        ? `${session.user.name || 'The other party'} accepted your ${isGiveaway ? 'course request' : 'trade proposal'}. Start chatting now!`
+        : `${session.user.name || 'The other party'} rejected your ${isGiveaway ? 'course request' : 'trade proposal'}.`,
       link: `/trading/matches/${id}`,
     })
 

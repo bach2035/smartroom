@@ -21,6 +21,7 @@ export async function GET(
     const { data: match } = await supabaseAdmin
       .from('trade_matches')
       .select(`
+        initiated_by,
         listing_a:trade_listings!listing_a_id(user_id),
         listing_b:trade_listings!listing_b_id(user_id)
       `)
@@ -32,8 +33,12 @@ export async function GET(
     }
 
     const listingA = match.listing_a as unknown as Record<string, unknown>
-    const listingB = match.listing_b as unknown as Record<string, unknown>
-    if (listingA?.user_id !== session.user.id && listingB?.user_id !== session.user.id) {
+    const listingB = match.listing_b as unknown as Record<string, unknown> | null
+    const isParty =
+      listingA?.user_id === session.user.id ||
+      listingB?.user_id === session.user.id ||
+      match.initiated_by === session.user.id
+    if (!isParty) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
     }
 
@@ -99,6 +104,7 @@ export async function POST(
       .from('trade_matches')
       .select(`
         status,
+        initiated_by,
         listing_a:trade_listings!listing_a_id(user_id),
         listing_b:trade_listings!listing_b_id(user_id)
       `)
@@ -114,8 +120,12 @@ export async function POST(
     }
 
     const listingA = match.listing_a as unknown as Record<string, unknown>
-    const listingB = match.listing_b as unknown as Record<string, unknown>
-    if (listingA?.user_id !== session.user.id && listingB?.user_id !== session.user.id) {
+    const listingB = match.listing_b as unknown as Record<string, unknown> | null
+    const isParty =
+      listingA?.user_id === session.user.id ||
+      listingB?.user_id === session.user.id ||
+      match.initiated_by === session.user.id
+    if (!isParty) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
     }
 
@@ -135,9 +145,18 @@ export async function POST(
     }
 
     // Notify the other party (throttled — skip if recent notification exists)
-    const otherUserId = listingA?.user_id === session.user.id
-      ? listingB?.user_id as string
-      : listingA?.user_id as string
+    const isGiveawayRequest = !listingB
+    let otherUserId: string
+    if (isGiveawayRequest) {
+      // Giveaway: other party is the initiator (requester) or the listing owner
+      otherUserId = listingA?.user_id === session.user.id
+        ? match.initiated_by
+        : listingA?.user_id as string
+    } else {
+      otherUserId = listingA?.user_id === session.user.id
+        ? listingB?.user_id as string
+        : listingA?.user_id as string
+    }
 
     const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
     const { count: recentCount } = await supabaseAdmin

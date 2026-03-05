@@ -7,9 +7,11 @@ import { useToast } from '@/components/ui/Toast'
 
 interface MatchingListingsProps {
   listingId: string
+  listingType?: 'TRADE' | 'GIVEAWAY'
 }
 
-export default function MatchingListings({ listingId }: MatchingListingsProps) {
+export default function MatchingListings({ listingId, listingType = 'TRADE' }: MatchingListingsProps) {
+  const isGiveaway = listingType === 'GIVEAWAY'
   const [matches, setMatches] = useState<(TradeListing & { matchScore?: number })[]>([])
   const [loading, setLoading] = useState(true)
   const [proposing, setProposing] = useState<string | null>(null)
@@ -46,7 +48,7 @@ export default function MatchingListings({ listingId }: MatchingListingsProps) {
       })
       const data = await res.json()
       if (res.ok) {
-        showToast('Trade proposed successfully!', 'success')
+        showToast(isGiveaway ? 'Course requested!' : 'Trade proposed successfully!', 'success')
         setMatches((prev) => prev.filter((m) => m.id !== theirListingId))
         setProposalNote(null)
         setNoteText('')
@@ -83,7 +85,7 @@ export default function MatchingListings({ listingId }: MatchingListingsProps) {
               <p className="font-medium text-slate-800">
                 {match.userName || 'Anonymous'}
               </p>
-              {match.matchScore && (
+              {!isGiveaway && match.matchScore && (
                 <p className="text-xs text-green-600">{match.matchScore} course overlap(s)</p>
               )}
             </div>
@@ -109,7 +111,7 @@ export default function MatchingListings({ listingId }: MatchingListingsProps) {
                 disabled={proposing === match.id}
                 className="btn btn-primary text-sm"
               >
-                {proposing === match.id ? 'Proposing...' : 'Propose Trade'}
+                {proposing === match.id ? 'Proposing...' : isGiveaway ? 'Request Course' : 'Propose Trade'}
               </button>
             </div>
           </div>
@@ -118,7 +120,7 @@ export default function MatchingListings({ listingId }: MatchingListingsProps) {
             <div className="mb-3">
               <input
                 className="form-input w-full text-sm"
-                placeholder="Add a note explaining why this trade works..."
+                placeholder={isGiveaway ? "Add a note with your request..." : "Add a note explaining why this trade works..."}
                 value={noteText}
                 onChange={(e) => setNoteText(e.target.value)}
                 autoFocus

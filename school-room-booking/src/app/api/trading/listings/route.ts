@@ -8,6 +8,7 @@ function transformListing(listing: Record<string, unknown>) {
   return {
     id: listing.id as string,
     userId: listing.user_id as string,
+    listingType: (listing.listing_type as string) || 'TRADE',
     status: listing.status as string,
     notes: listing.notes as string | null,
     createdAt: listing.created_at as string,
@@ -52,6 +53,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const courseCode = searchParams.get('courseCode')
     const search = searchParams.get('search')
+    const listingType = searchParams.get('listingType')
 
     // Find listing IDs that the user already has active matches with
     const { data: myListings } = await supabaseAdmin
@@ -93,6 +95,12 @@ export async function GET(request: NextRequest) {
 
     if (excludeListingIds.length > 0) {
       query = query.not('id', 'in', `(${excludeListingIds.join(',')})`)
+    }
+
+    if (listingType === 'GIVEAWAY') {
+      query = query.eq('listing_type', 'GIVEAWAY')
+    } else {
+      query = query.or('listing_type.eq.TRADE,listing_type.is.null')
     }
 
     if (courseCode) {
@@ -146,19 +154,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { notes, haveCourses, wantCourses } = await request.json()
+    const { notes, haveCourses, wantCourses, listingType } = await request.json()
+    const type = listingType === 'GIVEAWAY' ? 'GIVEAWAY' : 'TRADE'
 
-    if (!haveCourses?.length || !wantCourses?.length) {
-      return NextResponse.json(
-        { error: 'At least one HAVE course and one WANT course are required' },
-        { status: 400 }
-      )
+    if (!haveCourses?.length) {
+      return NextResponse.json({ error: 'At least one HAVE course is required' }, { status: 400 })
+    }
+
+    if (type === 'TRADE' && !wantCourses?.length) {
+      return NextResponse.json({ error: 'At least one WANT course is required for trades' }, { status: 400 })
+    }
+
+    if (type === 'GIVEAWAY' && haveCourses.length > 1) {
+      return NextResponse.json({ error: 'Giveaway listings can only have one course' }, { status: 400 })
     }
 
     // Create listing
     const { data: listing, error: listingError } = await supabaseAdmin
       .from('trade_listings')
-      .insert({ user_id: session.user.id, notes: notes || null })
+      .insert({ user_id: session.user.id, listing_type: type, notes: notes || null })
       .select('*')
       .single()
 
@@ -179,7 +193,7 @@ export async function POST(request: NextRequest) {
         credits: c.credits || null,
         type: 'HAVE' as const,
       })),
-      ...wantCourses.map((c: Record<string, unknown>) => ({
+      ...(wantCourses || []).map((c: Record<string, unknown>) => ({
         listing_id: listing.id,
         course_name: c.courseName,
         course_code: c.courseCode,

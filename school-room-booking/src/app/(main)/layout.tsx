@@ -1,5 +1,6 @@
 import Header from '@/components/layout/Header'
 import WelcomeModal from '@/components/onboarding/WelcomeModal'
+import SupportChat from '@/components/support/SupportChat'
 
 export default function MainLayout({
   children,
@@ -11,6 +12,7 @@ export default function MainLayout({
       <Header />
       <main>{children}</main>
       <WelcomeModal />
+      <SupportChat />
     </div>
   )
 }

@@ -7,12 +7,13 @@ import ListingForm from '@/components/trading/ListingForm'
 export default function NewListingClient() {
   const router = useRouter()
 
-  async function handleSubmit(data: { notes: string; haveCourses: { courseName: string; courseCode: string; section: string; schedule: string; credits: string }[]; wantCourses: { courseName: string; courseCode: string; section: string; schedule: string; credits: string }[] }) {
+  async function handleSubmit(data: { notes: string; haveCourses: { courseName: string; courseCode: string; section: string; schedule: string; credits: string }[]; wantCourses: { courseName: string; courseCode: string; section: string; schedule: string; credits: string }[]; listingType?: string }) {
     const res = await fetch('/api/trading/listings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         notes: data.notes,
+        listingType: data.listingType || 'TRADE',
         haveCourses: data.haveCourses.map((c) => ({
           ...c,
           credits: c.credits ? parseInt(c.credits) : null,

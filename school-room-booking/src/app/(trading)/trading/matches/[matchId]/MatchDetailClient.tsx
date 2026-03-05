@@ -23,11 +23,15 @@ interface MatchDetail {
   id: string
   status: TradeMatchStatus
   isInitiator: boolean
+  isGiveawayRequest?: boolean
   createdAt: string
   completedByMe: boolean
   completedByOther: boolean
-  myListing: MatchSide
-  otherListing: MatchSide
+  myListing: MatchSide | null
+  otherListing: MatchSide | null
+  requesterName?: string | null
+  requesterEmail?: string | null
+  requesterClass?: string | null
 }
 
 type Tab = 'details' | 'chat'
@@ -133,13 +137,21 @@ export default function MatchDetailClient({ matchId }: { matchId: string }) {
   const waitingForOther = match.status === 'ACCEPTED' && effectiveCompletedByMe && !match.completedByOther
   const chatEnabled = match.status === 'ACCEPTED' || match.status === 'COMPLETED'
 
-  // Trade summary
+  const isGiveaway = !!match.isGiveawayRequest
+
+  // Trade summary (not for giveaways)
   const tradeSummary = (() => {
+    if (isGiveaway || !match.myListing || !match.otherListing) return null
     const myGive = match.myListing.haveCourses.map((c) => c.courseCode).join(', ')
     const myGet = match.otherListing.haveCourses.map((c) => c.courseCode).join(', ')
     if (myGive && myGet) return { give: myGive, get: myGet }
     return null
   })()
+
+  // For giveaway requests, determine who is the "other" person
+  const otherName = isGiveaway
+    ? (match.isInitiator ? (match.myListing?.userName || match.otherListing?.userName) : (match.requesterName || 'Someone'))
+    : (match.otherListing?.userName || 'Unknown')
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -150,7 +162,9 @@ export default function MatchDetailClient({ matchId }: { matchId: string }) {
       <div className="card p-6 mt-4">
         <div className="flex items-start justify-between mb-4">
           <h1 className="text-xl font-bold text-slate-800">
-            Trade with {match.otherListing.userName || 'Unknown'}
+            {isGiveaway
+              ? (match.isInitiator ? 'Course Request' : `Request from ${otherName}`)
+              : `Trade with ${otherName}`}
           </h1>
           <TradeStatusBadge status={match.status} />
         </div>
@@ -172,7 +186,7 @@ export default function MatchDetailClient({ matchId }: { matchId: string }) {
             <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span>Waiting for <strong>{match.otherListing.userName || 'the other party'}</strong> to accept your trade proposal.</span>
+            <span>Waiting for <strong>{otherName}</strong> to accept your {isGiveaway ? 'course request' : 'trade proposal'}.</span>
           </div>
         )}
 
@@ -181,7 +195,7 @@ export default function MatchDetailClient({ matchId }: { matchId: string }) {
             <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
-            <span><strong>{match.otherListing.userName || 'Someone'}</strong> has proposed a trade with you. Accept or reject below.</span>
+            <span><strong>{otherName}</strong> has {isGiveaway ? 'requested your course' : 'proposed a trade with you'}. Accept or reject below.</span>
           </div>
         )}
 
@@ -205,8 +219,8 @@ export default function MatchDetailClient({ matchId }: { matchId: string }) {
               {effectiveCompletedByMe && match.completedByOther
                 ? 'Both parties have confirmed. Trade is being finalized!'
                 : match.completedByOther && !effectiveCompletedByMe
-                  ? <><strong>{match.otherListing.userName || 'The other party'}</strong> has marked this trade as completed — waiting for your confirmation.</>
-                  : <>You have marked this trade as completed — waiting for <strong>{match.otherListing.userName || 'the other party'}</strong> to confirm.</>
+                  ? <><strong>{otherName}</strong> has marked this as completed — waiting for your confirmation.</>
+                  : <>You have marked this as completed — waiting for <strong>{otherName}</strong> to confirm.</>
               }
             </span>
           </div>
@@ -234,55 +248,84 @@ export default function MatchDetailClient({ matchId }: { matchId: string }) {
 
         {/* Details content (hidden on mobile when chat tab active) */}
         <div className={`${activeTab === 'chat' ? 'hidden md:block' : ''}`}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            {/* My side */}
-            <div>
-              <h2 className="text-sm font-semibold text-slate-600 mb-2">Your Listing</h2>
-              <div className="space-y-2">
+          {isGiveaway ? (
+            <div className="mb-6">
+              {/* Giveaway course info */}
+              {(match.myListing || match.otherListing) && (
                 <div>
-                  <p className="text-xs text-slate-500 mb-1">You have:</p>
+                  <h2 className="text-sm font-semibold text-emerald-700 mb-2">Course Being Given Away</h2>
                   <div className="flex flex-wrap gap-1.5">
-                    {match.myListing.haveCourses.map((c) => (
+                    {(match.myListing || match.otherListing)!.haveCourses.map((c) => (
                       <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="HAVE" classCode={c.classCode} />
                     ))}
                   </div>
                 </div>
+              )}
+              {/* Requester info (shown to owner) */}
+              {!match.isInitiator && match.requesterName && (
+                <div className="mt-4 bg-slate-50 rounded-lg p-3">
+                  <p className="text-xs text-slate-400 mb-1">Requested by</p>
+                  <p className="font-medium text-slate-700">{match.requesterName}</p>
+                  {match.requesterEmail && <p className="text-sm text-slate-500">{match.requesterEmail}</p>}
+                  {match.requesterClass && <p className="text-sm text-slate-500">Class: {match.requesterClass}</p>}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              {/* My side */}
+              {match.myListing && (
                 <div>
-                  <p className="text-xs text-slate-500 mb-1">You want:</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {match.myListing.wantCourses.map((c) => (
-                      <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="WANT" classCode={c.classCode} />
-                    ))}
+                  <h2 className="text-sm font-semibold text-slate-600 mb-2">Your Listing</h2>
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">You have:</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {match.myListing.haveCourses.map((c) => (
+                          <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="HAVE" classCode={c.classCode} />
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">You want:</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {match.myListing.wantCourses.map((c) => (
+                          <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="WANT" classCode={c.classCode} />
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
+              )}
 
-            {/* Other side */}
-            <div>
-              <h2 className="text-sm font-semibold text-slate-600 mb-2">
-                {match.otherListing.userName || 'Other'}&#39;s Listing
-              </h2>
-              <div className="space-y-2">
+              {/* Other side */}
+              {match.otherListing && (
                 <div>
-                  <p className="text-xs text-slate-500 mb-1">They have:</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {match.otherListing.haveCourses.map((c) => (
-                      <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="HAVE" classCode={c.classCode} />
-                    ))}
+                  <h2 className="text-sm font-semibold text-slate-600 mb-2">
+                    {match.otherListing.userName || 'Other'}&#39;s Listing
+                  </h2>
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">They have:</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {match.otherListing.haveCourses.map((c) => (
+                          <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="HAVE" classCode={c.classCode} />
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">They want:</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {match.otherListing.wantCourses.map((c) => (
+                          <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="WANT" classCode={c.classCode} />
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <p className="text-xs text-slate-500 mb-1">They want:</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {match.otherListing.wantCourses.map((c) => (
-                      <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="WANT" classCode={c.classCode} />
-                    ))}
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
-          </div>
+          )}
 
           {canRespond && (
             <div className="flex gap-3 border-t pt-4">
@@ -315,7 +358,7 @@ export default function MatchDetailClient({ matchId }: { matchId: string }) {
             <div className="border-t pt-4">
               <div className="flex gap-3">
                 <button disabled className="btn btn-primary opacity-60 cursor-not-allowed">
-                  Waiting for {match.otherListing.userName || 'other party'}
+                  Waiting for {otherName}
                 </button>
                 <button
                   onClick={() => setConfirmAction('cancelComplete')}

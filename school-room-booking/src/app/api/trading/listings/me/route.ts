@@ -31,6 +31,7 @@ export async function GET() {
       return {
         id: listing.id,
         userId: listing.user_id,
+        listingType: (listing.listing_type as string) || 'TRADE',
         status: listing.status,
         notes: listing.notes,
         createdAt: listing.created_at,

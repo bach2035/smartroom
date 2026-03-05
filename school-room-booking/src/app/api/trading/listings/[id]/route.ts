@@ -40,6 +40,7 @@ export async function GET(
       listing: {
         id: listing.id,
         userId: listing.user_id,
+        listingType: (listing.listing_type as string) || 'TRADE',
         status: listing.status,
         notes: listing.notes,
         createdAt: listing.created_at,
@@ -114,9 +115,9 @@ export async function PATCH(
 
     const { notes, haveCourses, wantCourses } = await request.json()
 
-    if (!haveCourses?.length || !wantCourses?.length) {
+    if (!haveCourses?.length) {
       return NextResponse.json(
-        { error: 'At least one HAVE course and one WANT course are required' },
+        { error: 'At least one HAVE course is required' },
         { status: 400 }
       )
     }
@@ -141,7 +142,7 @@ export async function PATCH(
         credits: c.credits || null,
         type: 'HAVE' as const,
       })),
-      ...wantCourses.map((c: Record<string, unknown>) => ({
+      ...(wantCourses || []).map((c: Record<string, unknown>) => ({
         listing_id: id,
         course_name: c.courseName,
         course_code: c.courseCode,

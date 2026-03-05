@@ -140,9 +140,12 @@ export interface TradeListingCourse {
   type: TradeCourseType
 }
 
+export type TradeListingType = 'TRADE' | 'GIVEAWAY'
+
 export interface TradeListing {
   id: string
   userId: string
+  listingType: TradeListingType
   status: TradeListingStatus
   notes: string | null
   createdAt: string
@@ -177,6 +180,7 @@ export interface TradeMessage {
 
 // Notification types
 export type NotificationType =
+  | 'TRADE_PROPOSAL_SENT'
   | 'TRADE_PROPOSAL_RECEIVED'
   | 'TRADE_PROPOSAL_ACCEPTED'
   | 'TRADE_PROPOSAL_REJECTED'
