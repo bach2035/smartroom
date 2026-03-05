@@ -42,10 +42,8 @@ export default function ChatBox({ matchId, enabled }: ChatBoxProps) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  async function handleSend(e: React.FormEvent) {
-    e.preventDefault()
+  async function sendMessage() {
     if (!input.trim() || sending) return
-
     setSending(true)
     try {
       const res = await fetch(`/api/trading/matches/${matchId}/messages`, {
@@ -61,6 +59,13 @@ export default function ChatBox({ matchId, enabled }: ChatBoxProps) {
       }
     } finally {
       setSending(false)
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      sendMessage()
     }
   }
 
@@ -95,12 +100,13 @@ export default function ChatBox({ matchId, enabled }: ChatBoxProps) {
         ))}
         <div ref={bottomRef} />
       </div>
-      <form onSubmit={handleSend} className="border-t p-3 flex gap-2">
+      <form onSubmit={(e) => { e.preventDefault(); sendMessage() }} className="border-t p-3 flex gap-2">
         <input
           className="form-input flex-1"
-          placeholder="Type a message..."
+          placeholder="Type a message... (Enter to send)"
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
         />
         <button type="submit" disabled={sending || !input.trim()} className="btn btn-primary">
           Send

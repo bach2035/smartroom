@@ -16,6 +16,7 @@ interface RoomTimelineProps {
   bookings: TimelineBooking[]
   date: string
   bookingNumbers?: Record<string, number>
+  highlightedBookingId?: string | null
 }
 
 const START_HOUR = 7
@@ -41,8 +42,9 @@ function hasTimeConflict(
   )
 }
 
-export default function RoomTimeline({ bookings, date, bookingNumbers }: RoomTimelineProps) {
+export default function RoomTimeline({ bookings, date, bookingNumbers, highlightedBookingId }: RoomTimelineProps) {
   const [hoveredBooking, setHoveredBooking] = useState<string | null>(null)
+  const activeHighlight = hoveredBooking || highlightedBookingId || null
 
   // Filter bookings for this date and compute conflicts
   const dateBookings = useMemo(() => {
@@ -102,8 +104,12 @@ export default function RoomTimeline({ bookings, date, bookingNumbers }: RoomTim
           return (
             <div
               key={booking.id}
-              className={`absolute top-1 bottom-1 rounded ${bgColor} cursor-pointer transition-opacity flex items-center justify-center ${
-                hoveredBooking && hoveredBooking !== booking.id ? 'opacity-50' : 'opacity-90'
+              className={`absolute top-1 bottom-1 rounded ${bgColor} cursor-pointer transition-all flex items-center justify-center ${
+                activeHighlight && activeHighlight !== booking.id
+                  ? 'opacity-30'
+                  : activeHighlight === booking.id
+                    ? 'opacity-100 ring-2 ring-slate-800 ring-offset-1'
+                    : 'opacity-90'
               }`}
               style={{ left: `${left}%`, width: `${Math.max(width, 0.5)}%` }}
               onMouseEnter={() => setHoveredBooking(booking.id)}
@@ -116,7 +122,7 @@ export default function RoomTimeline({ bookings, date, bookingNumbers }: RoomTim
                 </span>
               )}
               {/* Tooltip */}
-              {hoveredBooking === booking.id && (
+              {activeHighlight === booking.id && (
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-10 pointer-events-none">
                   <div className="bg-slate-800 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-lg">
                     <p className="font-medium">{num != null && `#${num} · `}{booking.title}</p>

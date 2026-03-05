@@ -1,4 +1,7 @@
+'use client'
+
 import Header from '@/components/layout/Header'
+import { ToastProvider } from '@/components/ui/Toast'
 
 export default function TradingLayout({
   children,
@@ -6,9 +9,11 @@ export default function TradingLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      <main>{children}</main>
-    </div>
+    <ToastProvider>
+      <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+        <Header />
+        <main className="flex-1 min-h-0 overflow-hidden">{children}</main>
+      </div>
+    </ToastProvider>
   )
 }

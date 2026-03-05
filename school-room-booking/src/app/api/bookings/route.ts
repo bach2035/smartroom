@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
 import { sendBookingRequestEmail } from '@/lib/email'
+import { createNotification } from '@/lib/notifications'
 
 export async function POST(request: NextRequest) {
   try {
@@ -99,7 +100,7 @@ export async function POST(request: NextRequest) {
     const roomData = booking.room as unknown as { name: string; room_number: string }
     supabaseAdmin
       .from('users')
-      .select('email')
+      .select('id, email')
       .eq('role', 'ADMIN')
       .then(({ data: admins }) => {
         if (admins && admins.length > 0) {
@@ -114,6 +115,16 @@ export async function POST(request: NextRequest) {
               studentName: session.user.name || session.user.username || 'Unknown',
             }
           )
+          // In-app notification for each admin
+          for (const admin of admins) {
+            createNotification({
+              userId: admin.id,
+              type: 'BOOKING_SUBMITTED',
+              title: 'New booking request',
+              message: `${session.user.name || 'A student'} requested to book ${roomData.name} (${roomData.room_number}) — "${booking.title}"`,
+              link: `/admin`,
+            })
+          }
         }
       })
 

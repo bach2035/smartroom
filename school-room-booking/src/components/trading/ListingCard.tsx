@@ -2,8 +2,8 @@
 
 import Link from 'next/link'
 import type { TradeListing } from '@/types'
-import CourseTag from './CourseTag'
 import TradeStatusBadge from './TradeStatusBadge'
+import { relativeTime } from '@/lib/utils'
 
 interface ListingCardProps {
   listing: TradeListing
@@ -11,46 +11,56 @@ interface ListingCardProps {
   onClick?: () => void
 }
 
+function courseSummary(courses: TradeListing['haveCourses']) {
+  return courses.map((c) => {
+    let label = `${c.courseCode} - ${c.courseName}`
+    if (c.classCode) label += ` [${c.classCode}]`
+    return label
+  }).join(', ')
+}
+
 export default function ListingCard({ listing, showStatus, onClick }: ListingCardProps) {
+  const have = courseSummary(listing.haveCourses)
+  const want = courseSummary(listing.wantCourses)
+
   const content = (
-    <div className="card card-hover p-5">
-      <div className="flex items-start justify-between mb-3">
-        <div>
-          <p className="font-medium text-slate-800">
-            {listing.userName || 'Anonymous'}
-          </p>
-          <p className="text-xs text-slate-500">
-            {new Date(listing.createdAt).toLocaleDateString()}
-          </p>
-        </div>
-        {showStatus && <TradeStatusBadge status={listing.status} />}
+    <div className="flex items-center gap-4 px-4 py-3 rounded-lg border border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 transition-colors">
+      {/* User + time */}
+      <div className="w-32 shrink-0">
+        <p className="font-medium text-slate-800 text-sm truncate">{listing.userName || 'Anonymous'}</p>
+        <p className="text-xs text-slate-400">{relativeTime(listing.createdAt)}</p>
       </div>
 
-      {listing.haveCourses.length > 0 && (
-        <div className="mb-2">
-          <p className="text-xs font-medium text-slate-500 mb-1">HAS</p>
-          <div className="flex flex-wrap gap-1.5">
-            {listing.haveCourses.map((c) => (
-              <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="HAVE" classCode={c.classCode} />
-            ))}
-          </div>
+      {/* Courses */}
+      <div className="flex-1 min-w-0 text-sm space-y-0.5">
+        {have && (
+          <p className="truncate">
+            <span className="text-xs font-medium text-slate-400 mr-1.5">HAS</span>
+            <span className="text-green-700">{have}</span>
+          </p>
+        )}
+        {want && (
+          <p className="truncate">
+            <span className="text-xs font-medium text-slate-400 mr-1.5">WANTS</span>
+            <span className="text-blue-700">{want}</span>
+          </p>
+        )}
+        {listing.notes && (
+          <p className="text-xs text-slate-400 truncate">{listing.notes}</p>
+        )}
+      </div>
+
+      {/* Status badge */}
+      {showStatus && (
+        <div className="shrink-0">
+          <TradeStatusBadge status={listing.status} />
         </div>
       )}
 
-      {listing.wantCourses.length > 0 && (
-        <div className="mb-2">
-          <p className="text-xs font-medium text-slate-500 mb-1">WANTS</p>
-          <div className="flex flex-wrap gap-1.5">
-            {listing.wantCourses.map((c) => (
-              <CourseTag key={c.id} courseCode={c.courseCode} courseName={c.courseName} type="WANT" classCode={c.classCode} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {listing.notes && (
-        <p className="text-sm text-slate-600 mt-2 line-clamp-2">{listing.notes}</p>
-      )}
+      {/* Chevron */}
+      <svg className="w-4 h-4 text-slate-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+      </svg>
     </div>
   )
 

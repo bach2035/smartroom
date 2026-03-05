@@ -13,6 +13,16 @@ export default withAuth(
       }
     }
 
+    // Admins cannot access student interfaces — redirect to admin panels
+    if (token?.role === 'ADMIN') {
+      if (pathname.startsWith('/map') || pathname.startsWith('/room') || pathname.startsWith('/bookings') || pathname.startsWith('/reports')) {
+        return NextResponse.redirect(new URL('/admin', req.url))
+      }
+      if (pathname.startsWith('/trading') && !pathname.startsWith('/trading/admin')) {
+        return NextResponse.redirect(new URL('/trading/admin', req.url))
+      }
+    }
+
     return NextResponse.next()
   },
   {

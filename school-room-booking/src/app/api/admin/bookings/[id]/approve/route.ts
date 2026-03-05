@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
 import { sendBookingApprovedEmail } from '@/lib/email'
+import { createNotification } from '@/lib/notifications'
 
 export async function PATCH(
   request: NextRequest,
@@ -61,6 +62,13 @@ export async function PATCH(
           startTime: booking.start_time,
           endTime: booking.end_time,
           studentName: student.full_name,
+        })
+        createNotification({
+          userId: booking.user_id,
+          type: 'BOOKING_APPROVED',
+          title: 'Booking approved!',
+          message: `Your booking "${booking.title}" for ${room.name} (${room.room_number}) has been approved.`,
+          link: `/bookings`,
         })
       }
     })

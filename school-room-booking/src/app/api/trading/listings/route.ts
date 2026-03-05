@@ -53,6 +53,33 @@ export async function GET(request: NextRequest) {
     const courseCode = searchParams.get('courseCode')
     const search = searchParams.get('search')
 
+    // Find listing IDs that the user already has active matches with
+    const { data: myListings } = await supabaseAdmin
+      .from('trade_listings')
+      .select('id')
+      .eq('user_id', session.user.id)
+
+    const myListingIds = (myListings || []).map((l) => l.id)
+    let excludeListingIds: string[] = []
+
+    if (myListingIds.length > 0) {
+      const { data: activeMatches } = await supabaseAdmin
+        .from('trade_matches')
+        .select('listing_a_id, listing_b_id')
+        .in('status', ['PENDING', 'ACCEPTED'])
+        .or(`listing_a_id.in.(${myListingIds.join(',')}),listing_b_id.in.(${myListingIds.join(',')})`)
+
+      if (activeMatches) {
+        const matched = new Set<string>()
+        for (const m of activeMatches) {
+          // Add the OTHER listing (not ours) to the exclude set
+          if (myListingIds.includes(m.listing_a_id)) matched.add(m.listing_b_id)
+          if (myListingIds.includes(m.listing_b_id)) matched.add(m.listing_a_id)
+        }
+        excludeListingIds = Array.from(matched)
+      }
+    }
+
     let query = supabaseAdmin
       .from('trade_listings')
       .select(`
@@ -63,6 +90,10 @@ export async function GET(request: NextRequest) {
       .eq('status', 'OPEN')
       .neq('user_id', session.user.id)
       .order('created_at', { ascending: false })
+
+    if (excludeListingIds.length > 0) {
+      query = query.not('id', 'in', `(${excludeListingIds.join(',')})`)
+    }
 
     if (courseCode) {
       const { data: listingIds } = await supabaseAdmin

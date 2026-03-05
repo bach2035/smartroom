@@ -60,14 +60,14 @@ Building
         └── RoomBookingGuide (approval_steps as JSONB)
 Report → Room, User (issue reporting with status tracking)
 
-TradeProfile → User (display_name, contact info for trading)
+Course (name UNIQUE, code) — catalog of available courses
 TradeListing → User (status: OPEN/MATCHED/COMPLETED/CANCELLED)
-└── TradeListingCourse (course_name, course_code, type: HAVE/WANT)
+└── TradeListingCourse (course_name, course_code, class_code, type: HAVE/WANT)
 TradeMatch → TradeListing A + TradeListing B (status: PENDING/ACCEPTED/REJECTED/COMPLETED)
 └── TradeMessage (chat within a match)
 ```
 
-Database schema: `supabase/schema.sql` (RLS enabled on all tables). Seed data: `supabase/seed.sql` (3 test users, 2 buildings, 3 floors, 13 rooms, 2 trade profiles, 2 trade listings). Test credentials: `admin`/`john.doe`/`jane.smith` (all passwords in seed.sql).
+Database schema: `supabase/schema.sql` (RLS enabled on all tables). Seed data: `supabase/seed.sql` (3 test users, 2 buildings, 3 floors, 13 rooms, 8 courses, 2 trade listings). Test credentials: `admin`/`john.doe`/`jane.smith` (all passwords in seed.sql).
 
 ### Dual Type System
 
@@ -89,7 +89,7 @@ Two clients exported:
 - JWT enriched with `id`, `username`, `role` in callbacks
 - Session type augmented in `src/types/next-auth.d.ts` (note: has stale `@prisma/client` import for `Role` type)
 - Middleware enforces auth on all routes except `/`, `/login`, `/register`, `/api/auth/**`
-- Admin routes (`/admin/*`) redirect non-admins to `/map`
+- Admin routes (`/admin/*` and `/trading/admin/*`) redirect non-admins to `/map`
 - Matcher excludes `_next`, `maps/`, and `.svg` files
 
 ### Route Groups & Auth
@@ -98,7 +98,8 @@ Two clients exported:
 |-------|--------|--------|
 | `(auth)` | `/login`, `/register` | Unauthenticated only |
 | `(main)` | `/map/**`, `/room/**`, `/bookings`, `/reports` | Authenticated users |
-| `(trading)` | `/trading/**` | Authenticated users |
+| `(trading)` | `/trading/**` (except `/trading/admin/**`) | Authenticated users |
+| `(trading)` | `/trading/admin/**` | ADMIN role only |
 | `(admin)` | `/admin/**` | ADMIN role only |
 
 ### Server → Client Component Pattern
@@ -135,13 +136,16 @@ Click behavior: available room → navigate to `/room/[roomId]?date=YYYY-MM-DD`;
 - `GET /api/bookings/me` — User's bookings
 - `GET/PATCH /api/bookings/[id]` — Booking detail & updates
 - `PATCH /api/bookings/[id]/cancel` — Cancel own booking
+- `GET /api/bookings/[id]/attachments`, `DELETE /api/bookings/[id]/attachments/[attachmentId]`
 - `GET /api/rooms/[id]/availability` — 30-min time slots for a date (7:00–22:00)
 - `GET /api/rooms/available` — Search available rooms with date/time filters
 - `GET /api/buildings`, `GET /api/buildings/[id]/floors`, `GET /api/floors/[id]`
 - `POST/GET /api/reports` — Issue reporting
+- `GET /api/reports/me` — User's own reports
+- `GET/PATCH /api/users/profile` — User profile management
+- `GET /api/courses` — Course catalog (for listing creation autocomplete)
 
 **Trading APIs:**
-- `GET/PUT /api/trading/profile` — Trade profile CRUD (upsert)
 - `GET/POST /api/trading/listings` — Browse OPEN listings + create listing
 - `GET /api/trading/listings/me` — User's own listings
 - `GET/PATCH/DELETE /api/trading/listings/[id]` — Listing detail, update, cancel
@@ -152,6 +156,7 @@ Click behavior: available room → navigate to `/room/[roomId]?date=YYYY-MM-DD`;
 - `PATCH /api/trading/matches/[id]/complete` — Mark match + listings as COMPLETED
 
 **Admin APIs** (all check `session.user.role === 'ADMIN'`):
+- `GET /api/admin/bookings` — All bookings
 - `PATCH /api/admin/bookings/[id]/approve` — Approve with `approved_by` + timestamp
 - `PATCH /api/admin/bookings/[id]/reject` — Reject with `reject_reason`
 - `GET /api/admin/bookings/pending-by-room` — Triage view grouped by room
@@ -159,14 +164,21 @@ Click behavior: available room → navigate to `/room/[roomId]?date=YYYY-MM-DD`;
 - `GET/PUT /api/admin/rooms/[id]/guide` — Room booking guide management
 - `GET/PATCH /api/admin/users` — User management
 - `GET/PATCH /api/admin/reports` — Report management
+- `GET/POST/DELETE /api/admin/courses` — Course catalog CRUD (409 on duplicate name)
+- `GET /api/admin/trading/listings` — Browse all trade listings (filterable by status + search)
+- `GET/PATCH /api/admin/trading/listings/[id]` — Listing detail + admin cancel
+- `GET /api/admin/trading/matches` — Browse all trade matches (filterable by status)
+- `GET /api/admin/trading/matches/[id]` — Match detail with embedded messages
+- `GET /api/admin/trading/stats` — Dashboard stats (counts, completion rate, top courses)
 
 ### Utilities (`src/lib/utils.ts`)
 
 - `cn()` — Tailwind class merging via clsx
 - `getTodayString()` / `getDateString()` — YYYY-MM-DD in GMT+7
 - `toGMT7ISO(date, time)` — Combine date + time to ISO string with +07:00 offset
-- `formatDate()` / `formatTime()` / `formatDateTime()` — Display formatting in GMT+7
+- `formatDate()` / `formatTime()` / `formatDateTime()` / `formatDateFromString()` — Display formatting in GMT+7
 - `generateTimeSlots()` — Creates 30-min slots array from 7:00–22:00
+- `isTimeInRange(time, startTime, endTime)` — Check if a time falls within a range
 
 ### Sticky Navigation Context
 

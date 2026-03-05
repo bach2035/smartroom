@@ -62,7 +62,6 @@ export default function RoomResultCard({
               key={eq.id}
               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-xs text-slate-600 group-hover:bg-red-100/50"
             >
-              {eq.icon && <span className="text-xs">{eq.icon}</span>}
               {eq.name}
             </span>
           ))}

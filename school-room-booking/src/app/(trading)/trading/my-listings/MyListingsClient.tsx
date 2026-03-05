@@ -9,6 +9,8 @@ import TradeStatusBadge from '@/components/trading/TradeStatusBadge'
 import MatchingListings from '@/components/trading/MatchingListings'
 import ListingForm from '@/components/trading/ListingForm'
 import Modal from '@/components/ui/Modal'
+import ConfirmModal from '@/components/ui/ConfirmModal'
+import { useToast } from '@/components/ui/Toast'
 
 interface ListingDetail {
   id: string
@@ -30,14 +32,19 @@ interface ListingDetail {
 export default function MyListingsClient() {
   const [listings, setListings] = useState<TradeListing[]>([])
   const [loading, setLoading] = useState(true)
+  const { showToast } = useToast()
 
   // Modal state
   const [selectedListing, setSelectedListing] = useState<ListingDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailError, setDetailError] = useState<string | null>(null)
   const [showMatches, setShowMatches] = useState(false)
-  const [cancelling, setCancelling] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+
+  // Confirm modal
+  const [confirmCancel, setConfirmCancel] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
 
   const fetchListings = useCallback(async () => {
     setLoading(true)
@@ -99,16 +106,40 @@ export default function MyListingsClient() {
       throw new Error(d.error || 'Failed to create listing')
     }
     setShowCreateModal(false)
+    showToast('Listing created successfully!')
+    fetchListings()
+  }
+
+  const handleEdit = async (data: { notes: string; haveCourses: { courseName: string; courseCode: string; section: string; schedule: string; credits: string }[]; wantCourses: { courseName: string; courseCode: string; section: string; schedule: string; credits: string }[] }) => {
+    if (!selectedListing) return
+    const res = await fetch(`/api/trading/listings/${selectedListing.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        notes: data.notes,
+        haveCourses: data.haveCourses.map((c) => ({ ...c, credits: c.credits ? parseInt(c.credits) : null })),
+        wantCourses: data.wantCourses.map((c) => ({ ...c, credits: c.credits ? parseInt(c.credits) : null })),
+      }),
+    })
+    if (!res.ok) {
+      const d = await res.json()
+      throw new Error(d.error || 'Failed to update listing')
+    }
+    setShowEditModal(false)
+    showToast('Listing updated successfully!')
+    openDetail(selectedListing.id)
     fetchListings()
   }
 
   const handleCancel = async () => {
-    if (!selectedListing || !confirm('Cancel this listing?')) return
+    if (!selectedListing) return
     setCancelling(true)
     try {
       const res = await fetch(`/api/trading/listings/${selectedListing.id}`, { method: 'DELETE' })
       if (res.ok) {
+        setConfirmCancel(false)
         setSelectedListing(null)
+        showToast('Listing cancelled')
         fetchListings()
       }
     } finally {
@@ -133,14 +164,18 @@ export default function MyListingsClient() {
       {loading ? (
         <div className="text-center py-12 text-slate-500">Loading...</div>
       ) : listings.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-slate-500 mb-4">You haven&apos;t created any listings yet.</p>
+        <div className="text-center py-16">
+          <svg className="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          <p className="text-slate-600 font-medium mb-1">No listings yet</p>
+          <p className="text-sm text-slate-400 mb-4">Create your first listing to start trading courses.</p>
           <button onClick={() => setShowCreateModal(true)} className="btn btn-primary">
             Create Your First Listing
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
           {listings.map((listing) => (
             <ListingCard key={listing.id} listing={listing} showStatus onClick={() => openDetail(listing.id)} />
           ))}
@@ -249,11 +284,16 @@ export default function MyListingsClient() {
                   {showMatches ? 'Hide Matches' : 'Find Matches'}
                 </button>
                 <button
-                  onClick={handleCancel}
-                  disabled={cancelling}
+                  onClick={() => setShowEditModal(true)}
+                  className="btn btn-secondary"
+                >
+                  Edit Listing
+                </button>
+                <button
+                  onClick={() => setConfirmCancel(true)}
                   className="btn btn-secondary text-red-600 hover:text-red-700"
                 >
-                  {cancelling ? 'Cancelling...' : 'Cancel Listing'}
+                  Cancel Listing
                 </button>
               </div>
             )}
@@ -269,6 +309,38 @@ export default function MyListingsClient() {
         )}
       </Modal>
 
+      {/* Edit Listing Modal */}
+      {selectedListing && (
+        <Modal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          title="Edit Listing"
+          size="lg"
+        >
+          <ListingForm
+            initialNotes={selectedListing.notes || ''}
+            initialHaveCourses={selectedListing.haveCourses.map((c) => ({
+              courseName: c.courseName,
+              courseCode: c.courseCode,
+              classCode: c.classCode || '',
+              section: c.section || '',
+              schedule: c.schedule || '',
+              credits: c.credits?.toString() || '',
+            }))}
+            initialWantCourses={selectedListing.wantCourses.map((c) => ({
+              courseName: c.courseName,
+              courseCode: c.courseCode,
+              classCode: c.classCode || '',
+              section: c.section || '',
+              schedule: c.schedule || '',
+              credits: c.credits?.toString() || '',
+            }))}
+            onSubmit={handleEdit}
+            submitLabel="Save Changes"
+          />
+        </Modal>
+      )}
+
       {/* Create Listing Modal */}
       <Modal
         isOpen={showCreateModal}
@@ -279,6 +351,18 @@ export default function MyListingsClient() {
         <p className="text-sm text-slate-500 mb-4">List the courses you have and want to trade.</p>
         <ListingForm onSubmit={handleCreate} />
       </Modal>
+
+      {/* Confirm Cancel Modal */}
+      <ConfirmModal
+        isOpen={confirmCancel}
+        onClose={() => setConfirmCancel(false)}
+        onConfirm={handleCancel}
+        title="Cancel Listing"
+        message="This will cancel your listing and it cannot be undone. Any pending matches will also be affected."
+        confirmLabel="Cancel Listing"
+        confirmVariant="danger"
+        loading={cancelling}
+      />
     </div>
   )
 }

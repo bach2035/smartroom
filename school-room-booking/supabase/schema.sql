@@ -253,6 +253,40 @@ CREATE POLICY "Allow all" ON trade_matches FOR ALL USING (true) WITH CHECK (true
 CREATE POLICY "Allow all" ON trade_messages FOR ALL USING (true) WITH CHECK (true);
 
 -- ============================================
+-- Notifications
+-- ============================================
+
+CREATE TYPE notification_type AS ENUM (
+  'TRADE_PROPOSAL_RECEIVED',
+  'TRADE_PROPOSAL_ACCEPTED',
+  'TRADE_PROPOSAL_REJECTED',
+  'TRADE_COMPLETED_BY_OTHER',
+  'TRADE_FULLY_COMPLETED',
+  'TRADE_NEW_MESSAGE',
+  'BOOKING_SUBMITTED',
+  'BOOKING_APPROVED',
+  'BOOKING_REJECTED',
+  'BOOKING_CANCELLED'
+);
+
+CREATE TABLE notifications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type notification_type NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  message TEXT NOT NULL,
+  link VARCHAR(500),
+  read BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_notifications_user ON notifications(user_id);
+CREATE INDEX idx_notifications_user_unread ON notifications(user_id) WHERE read = false;
+
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all" ON notifications FOR ALL USING (true) WITH CHECK (true);
+
+-- ============================================
 -- Course Catalog
 -- ============================================
 

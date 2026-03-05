@@ -174,3 +174,27 @@ export interface TradeMessage {
   senderName: string
   isOwn: boolean
 }
+
+// Notification types
+export type NotificationType =
+  | 'TRADE_PROPOSAL_RECEIVED'
+  | 'TRADE_PROPOSAL_ACCEPTED'
+  | 'TRADE_PROPOSAL_REJECTED'
+  | 'TRADE_COMPLETED_BY_OTHER'
+  | 'TRADE_FULLY_COMPLETED'
+  | 'TRADE_NEW_MESSAGE'
+  | 'BOOKING_SUBMITTED'
+  | 'BOOKING_APPROVED'
+  | 'BOOKING_REJECTED'
+  | 'BOOKING_CANCELLED'
+
+export interface Notification {
+  id: string
+  userId: string
+  type: NotificationType
+  title: string
+  message: string
+  link: string | null
+  read: boolean
+  createdAt: string
+}

@@ -42,9 +42,9 @@ export default function TradingDashboard() {
     new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 
   return (
-    <div className="space-y-8">
+    <div className="flex flex-col h-full gap-6">
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 shrink-0">
         <StatCard
           title="Total Listings"
           value={stats.totalListings}
@@ -75,10 +75,10 @@ export default function TradingDashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0">
         {/* Popular Courses */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col min-h-0">
+          <div className="flex items-center justify-between mb-4 shrink-0">
             <h2 className="text-lg font-semibold text-slate-800">Popular Courses</h2>
             <Link href="/trading/admin/listings" className="text-sm text-red-700 hover:text-red-800 font-medium">
               View all →
@@ -87,9 +87,9 @@ export default function TradingDashboard() {
           {stats.topCourses.length === 0 ? (
             <p className="text-sm text-slate-500 py-4">No courses yet.</p>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="flex-1 min-h-0 overflow-y-auto">
               <table className="w-full text-sm">
-                <thead>
+                <thead className="sticky top-0 bg-white">
                   <tr className="border-b border-slate-100">
                     <th className="text-left py-2 font-medium text-slate-500">Code</th>
                     <th className="text-left py-2 font-medium text-slate-500">Name</th>
@@ -121,8 +121,8 @@ export default function TradingDashboard() {
         </div>
 
         {/* Recent Activity */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col min-h-0">
+          <div className="flex items-center justify-between mb-4 shrink-0">
             <h2 className="text-lg font-semibold text-slate-800">Recent Activity</h2>
             <Link href="/trading/admin/matches" className="text-sm text-red-700 hover:text-red-800 font-medium">
               View matches →
@@ -131,7 +131,7 @@ export default function TradingDashboard() {
           {stats.recentActivity.length === 0 ? (
             <p className="text-sm text-slate-500 py-4">No activity yet.</p>
           ) : (
-            <div className="space-y-3">
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-3">
               {stats.recentActivity.map((a, i) => (
                 <div key={i} className="flex items-start gap-3">
                   <div className={`mt-0.5 w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
@@ -140,7 +140,11 @@ export default function TradingDashboard() {
                     {a.type === 'listing' ? <ListIcon size="sm" /> : <SwapIcon size="sm" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-slate-800">{a.description}</p>
+                    <p className="text-sm text-slate-800">
+                      <span className="font-medium">{a.userName}</span>
+                      {' · '}
+                      {a.description}
+                    </p>
                     <p className="text-xs text-slate-400 mt-0.5">{formatDate(a.timestamp)}</p>
                   </div>
                 </div>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
+import { createNotification } from '@/lib/notifications'
 
 export async function GET(
   _request: NextRequest,
@@ -158,6 +159,18 @@ export async function PATCH(
         .update({ status: 'MATCHED', updated_at: new Date().toISOString() })
         .in('id', [match.listing_a_id, match.listing_b_id])
     }
+
+    // Notify the initiator
+    const notifType = action === 'accept' ? 'TRADE_PROPOSAL_ACCEPTED' : 'TRADE_PROPOSAL_REJECTED'
+    createNotification({
+      userId: match.initiated_by,
+      type: notifType,
+      title: action === 'accept' ? 'Trade proposal accepted!' : 'Trade proposal rejected',
+      message: action === 'accept'
+        ? `${session.user.name || 'The other party'} accepted your trade proposal. Start chatting now!`
+        : `${session.user.name || 'The other party'} rejected your trade proposal.`,
+      link: `/trading/matches/${id}`,
+    })
 
     return NextResponse.json({ message: `Match ${newStatus.toLowerCase()}` })
   } catch (error) {

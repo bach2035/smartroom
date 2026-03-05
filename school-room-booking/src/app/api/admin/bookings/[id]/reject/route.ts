@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
 import { sendBookingRejectedEmail } from '@/lib/email'
+import { createNotification } from '@/lib/notifications'
 
 export async function PATCH(
   request: NextRequest,
@@ -64,6 +65,13 @@ export async function PATCH(
           endTime: booking.end_time,
           studentName: student.full_name,
         }, reason)
+        createNotification({
+          userId: booking.user_id,
+          type: 'BOOKING_REJECTED',
+          title: 'Booking rejected',
+          message: `Your booking "${booking.title}" for ${room.name} (${room.room_number}) was rejected.${reason ? ` Reason: ${reason}` : ''}`,
+          link: `/bookings`,
+        })
       }
     })
 

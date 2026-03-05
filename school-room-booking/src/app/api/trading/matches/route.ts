@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
+import { createNotification } from '@/lib/notifications'
 
 export async function GET() {
   try {
@@ -99,7 +100,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { myListingId, theirListingId } = await request.json()
+    const { myListingId, theirListingId, message } = await request.json()
 
     if (!myListingId || !theirListingId) {
       return NextResponse.json({ error: 'Both listing IDs are required' }, { status: 400 })
@@ -123,7 +124,7 @@ export async function POST(request: NextRequest) {
     // Verify other listing is OPEN
     const { data: theirListing } = await supabaseAdmin
       .from('trade_listings')
-      .select('status')
+      .select('user_id, status')
       .eq('id', theirListingId)
       .single()
 
@@ -152,6 +153,24 @@ export async function POST(request: NextRequest) {
       console.error('Error creating match:', error)
       return NextResponse.json({ error: 'Failed to create match' }, { status: 500 })
     }
+
+    // Send initial message if provided
+    if (message?.trim() && match.id) {
+      await supabaseAdmin.from('trade_messages').insert({
+        match_id: match.id,
+        sender_id: session.user.id,
+        content: message.trim(),
+      })
+    }
+
+    // Notify the other party
+    createNotification({
+      userId: theirListing.user_id,
+      type: 'TRADE_PROPOSAL_RECEIVED',
+      title: 'New trade proposal',
+      message: `${session.user.name || 'Someone'} wants to trade courses with you.`,
+      link: `/trading/matches/${match.id}`,
+    })
 
     return NextResponse.json({ message: 'Match proposed', matchId: match.id }, { status: 201 })
   } catch (error) {

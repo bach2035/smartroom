@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
+import { createNotification } from '@/lib/notifications'
 
 export async function PATCH(
   request: NextRequest,
@@ -59,6 +60,24 @@ export async function PATCH(
       .single()
 
     if (error) throw error
+
+    // Notify admins of cancellation
+    Promise.all([
+      supabaseAdmin.from('users').select('id').eq('role', 'ADMIN'),
+      supabaseAdmin.from('rooms').select('name, room_number').eq('id', booking.room_id).single(),
+    ]).then(([{ data: admins }, { data: room }]) => {
+      if (admins && room) {
+        for (const admin of admins) {
+          createNotification({
+            userId: admin.id,
+            type: 'BOOKING_CANCELLED',
+            title: 'Booking cancelled',
+            message: `${session.user.name || 'A student'} cancelled their booking "${booking.title}" for ${room.name} (${room.room_number}).`,
+            link: `/admin`,
+          })
+        }
+      }
+    })
 
     return NextResponse.json({
       message: 'Booking cancelled',

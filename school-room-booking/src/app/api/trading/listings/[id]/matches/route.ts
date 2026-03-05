@@ -32,8 +32,42 @@ export async function GET(
       .filter((c) => c.type === 'WANT')
       .map((c) => c.course_code.toLowerCase())
 
+    // Get the listing owner's ID to find all their listings
+    const { data: myListing } = await supabaseAdmin
+      .from('trade_listings')
+      .select('user_id')
+      .eq('id', id)
+      .single()
+
+    // Find listing IDs already in active matches with this user
+    let excludeListingIds: string[] = []
+    if (myListing) {
+      const { data: userListings } = await supabaseAdmin
+        .from('trade_listings')
+        .select('id')
+        .eq('user_id', myListing.user_id)
+
+      const userListingIds = (userListings || []).map((l) => l.id)
+      if (userListingIds.length > 0) {
+        const { data: activeMatches } = await supabaseAdmin
+          .from('trade_matches')
+          .select('listing_a_id, listing_b_id')
+          .in('status', ['PENDING', 'ACCEPTED'])
+          .or(`listing_a_id.in.(${userListingIds.join(',')}),listing_b_id.in.(${userListingIds.join(',')})`)
+
+        if (activeMatches) {
+          const matched = new Set<string>()
+          for (const m of activeMatches) {
+            if (userListingIds.includes(m.listing_a_id)) matched.add(m.listing_b_id)
+            if (userListingIds.includes(m.listing_b_id)) matched.add(m.listing_a_id)
+          }
+          excludeListingIds = Array.from(matched)
+        }
+      }
+    }
+
     // Fetch all other OPEN listings with courses
-    const { data: allListings } = await supabaseAdmin
+    let listingsQuery = supabaseAdmin
       .from('trade_listings')
       .select(`
         *,
@@ -42,6 +76,12 @@ export async function GET(
       `)
       .eq('status', 'OPEN')
       .neq('id', id)
+
+    if (excludeListingIds.length > 0) {
+      listingsQuery = listingsQuery.not('id', 'in', `(${excludeListingIds.join(',')})`)
+    }
+
+    const { data: allListings } = await listingsQuery
 
     if (!allListings?.length) {
       return NextResponse.json({ matches: [] })

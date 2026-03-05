@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
+import { createNotification } from '@/lib/notifications'
 
 export async function GET(
   request: NextRequest,
@@ -131,6 +132,30 @@ export async function POST(
     if (error) {
       console.error('Error sending message:', error)
       return NextResponse.json({ error: 'Failed to send message' }, { status: 500 })
+    }
+
+    // Notify the other party (throttled — skip if recent notification exists)
+    const otherUserId = listingA?.user_id === session.user.id
+      ? listingB?.user_id as string
+      : listingA?.user_id as string
+
+    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+    const { count: recentCount } = await supabaseAdmin
+      .from('notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', otherUserId)
+      .eq('type', 'TRADE_NEW_MESSAGE')
+      .eq('link', `/trading/matches/${id}`)
+      .gt('created_at', fiveMinAgo)
+
+    if (!recentCount) {
+      createNotification({
+        userId: otherUserId,
+        type: 'TRADE_NEW_MESSAGE',
+        title: 'New message',
+        message: `${session.user.name || 'Someone'}: ${content.trim().slice(0, 100)}`,
+        link: `/trading/matches/${id}`,
+      })
     }
 
     return NextResponse.json({

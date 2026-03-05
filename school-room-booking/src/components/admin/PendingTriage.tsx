@@ -82,6 +82,7 @@ export default function PendingTriage() {
   const [rejectReason, setRejectReason] = useState('')
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [detailBookingId, setDetailBookingId] = useState<string | null>(null)
+  const [hoveredBookingId, setHoveredBookingId] = useState<string | null>(null)
   const [detailAttachments, setDetailAttachments] = useState<{ id: string; fileName: string; fileSize: number; mimeType: string | null; createdAt: string; url: string | null }[]>([])
   const [attachmentsLoading, setAttachmentsLoading] = useState(false)
 
@@ -313,6 +314,8 @@ export default function PendingTriage() {
       <div
         key={booking.id}
         onClick={() => setDetailBookingId(booking.id)}
+        onMouseEnter={() => setHoveredBookingId(booking.id)}
+        onMouseLeave={() => setHoveredBookingId(null)}
         className={`p-4 rounded-lg border cursor-pointer transition-shadow hover:shadow-md ${
           expired
             ? 'border-slate-200 bg-slate-50 opacity-75'
@@ -394,7 +397,7 @@ export default function PendingTriage() {
 
   return (
     <>
-      <div className="flex gap-6 min-h-[600px]">
+      <div className="flex gap-6 h-full">
         {/* Left Panel — Room List */}
         <div className="w-72 shrink-0 bg-white rounded-lg shadow overflow-y-auto">
           <div className="px-4 py-3 border-b border-slate-100 sticky top-0 bg-white z-10">
@@ -454,11 +457,11 @@ export default function PendingTriage() {
         </div>
 
         {/* Right Panel — Room Detail */}
-        <div className="flex-1 bg-white rounded-lg shadow overflow-y-auto">
+        <div className="flex-1 bg-white rounded-lg shadow overflow-hidden flex flex-col">
           {selectedRoom ? (
-            <div className="p-6">
+            <div className="p-6 flex flex-col flex-1 min-h-0">
               {/* Room Header */}
-              <div className="mb-6">
+              <div className="mb-6 shrink-0">
                 <h2 className="text-xl font-bold text-slate-900">
                   {selectedRoom.roomName}
                 </h2>
@@ -468,7 +471,7 @@ export default function PendingTriage() {
               </div>
 
               {/* Date Tabs */}
-              <div className="flex gap-2 mb-6 flex-wrap">
+              <div className="flex gap-2 mb-6 flex-wrap shrink-0">
                 {selectedRoom.pendingDates.map((date) => {
                   const isActive = date === selectedDate
                   const dateIsExpired = new Date(date + 'T23:59:59') < new Date()
@@ -495,18 +498,18 @@ export default function PendingTriage() {
 
               {/* Timeline */}
               {selectedDate && (
-                <div className="mb-6">
-                  <RoomTimeline bookings={selectedRoom.bookings} date={selectedDate} bookingNumbers={bookingNumbers} />
+                <div className="mb-6 shrink-0">
+                  <RoomTimeline bookings={selectedRoom.bookings} date={selectedDate} bookingNumbers={bookingNumbers} highlightedBookingId={hoveredBookingId} />
                 </div>
               )}
 
-              {/* Pending Requests (active, not expired) */}
+              {/* Pending Requests — scrollable, fills remaining space */}
               {pendingBookings.length > 0 && (
-                <div className="mb-6">
-                  <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">
+                <div className="flex-1 min-h-0 flex flex-col mb-4">
+                  <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3 shrink-0">
                     Pending Requests
                   </h3>
-                  <div className="space-y-3">
+                  <div className="flex-1 min-h-0 overflow-y-scroll space-y-3 pr-1">
                     {pendingBookings.map((booking) => renderBookingCard(booking, false))}
                   </div>
                 </div>
@@ -514,7 +517,7 @@ export default function PendingTriage() {
 
               {/* Expired Requests */}
               {expiredBookings.length > 0 && (
-                <div className="mb-6">
+                <div className="mb-4 shrink-0">
                   <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -529,7 +532,7 @@ export default function PendingTriage() {
 
               {/* Approved Bookings */}
               {approvedBookings.length > 0 && (
-                <div>
+                <div className="shrink-0">
                   <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">
                     Approved Bookings
                   </h3>
@@ -538,6 +541,8 @@ export default function PendingTriage() {
                       <div
                         key={booking.id}
                         onClick={() => setDetailBookingId(booking.id)}
+                        onMouseEnter={() => setHoveredBookingId(booking.id)}
+                        onMouseLeave={() => setHoveredBookingId(null)}
                         className="p-3 rounded-lg border border-slate-100 bg-slate-50 cursor-pointer transition-shadow hover:shadow-md"
                       >
                         <div className="flex items-center justify-between">

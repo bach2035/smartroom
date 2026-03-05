@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
+import { createNotification } from '@/lib/notifications'
 
 export async function PATCH(
   _request: NextRequest,
@@ -64,14 +65,37 @@ export async function PATCH(
       .update(update)
       .eq('id', id)
 
+    const otherUserId = isA ? listingB?.user_id as string : listingA?.user_id as string
+
     if (bothConfirmed) {
       await supabaseAdmin
         .from('trade_listings')
         .update({ status: 'COMPLETED', updated_at: now })
         .in('id', [match.listing_a_id, match.listing_b_id])
 
+      // Notify both parties
+      const myUserId = session.user.id
+      for (const uid of [myUserId, otherUserId]) {
+        createNotification({
+          userId: uid,
+          type: 'TRADE_FULLY_COMPLETED',
+          title: 'Trade completed!',
+          message: 'Both parties have confirmed. The trade is now complete.',
+          link: `/trading/matches/${id}`,
+        })
+      }
+
       return NextResponse.json({ message: 'Trade completed successfully' })
     }
+
+    // Notify the other party that we confirmed
+    createNotification({
+      userId: otherUserId,
+      type: 'TRADE_COMPLETED_BY_OTHER',
+      title: 'Trade confirmation received',
+      message: `${session.user.name || 'The other party'} has marked the trade as completed. Please confirm on your end.`,
+      link: `/trading/matches/${id}`,
+    })
 
     return NextResponse.json({ message: 'Marked as completed. Waiting for the other party to confirm.' })
   } catch (error) {

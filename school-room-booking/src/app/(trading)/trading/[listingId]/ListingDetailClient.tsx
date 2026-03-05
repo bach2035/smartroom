@@ -6,6 +6,10 @@ import { useRouter } from 'next/navigation'
 import CourseTag from '@/components/trading/CourseTag'
 import TradeStatusBadge from '@/components/trading/TradeStatusBadge'
 import MatchingListings from '@/components/trading/MatchingListings'
+import ListingForm from '@/components/trading/ListingForm'
+import Modal from '@/components/ui/Modal'
+import ConfirmModal from '@/components/ui/ConfirmModal'
+import { useToast } from '@/components/ui/Toast'
 
 interface ListingDetail {
   id: string
@@ -26,7 +30,10 @@ export default function ListingDetailClient({ listingId }: { listingId: string }
   const [listing, setListing] = useState<ListingDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [showMatches, setShowMatches] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [confirmCancel, setConfirmCancel] = useState(false)
   const [cancelling, setCancelling] = useState(false)
+  const { showToast } = useToast()
 
   const fetchListing = useCallback(async () => {
     try {
@@ -45,14 +52,36 @@ export default function ListingDetailClient({ listingId }: { listingId: string }
   }, [fetchListing])
 
   async function handleCancel() {
-    if (!confirm('Cancel this listing?')) return
     setCancelling(true)
     try {
       const res = await fetch(`/api/trading/listings/${listingId}`, { method: 'DELETE' })
-      if (res.ok) router.push('/trading/my-listings')
+      if (res.ok) {
+        showToast('Listing cancelled')
+        router.push('/trading/my-listings')
+      }
     } finally {
       setCancelling(false)
+      setConfirmCancel(false)
     }
+  }
+
+  async function handleEdit(data: { notes: string; haveCourses: { courseName: string; courseCode: string; section: string; schedule: string; credits: string }[]; wantCourses: { courseName: string; courseCode: string; section: string; schedule: string; credits: string }[] }) {
+    const res = await fetch(`/api/trading/listings/${listingId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        notes: data.notes,
+        haveCourses: data.haveCourses.map((c) => ({ ...c, credits: c.credits ? parseInt(c.credits) : null })),
+        wantCourses: data.wantCourses.map((c) => ({ ...c, credits: c.credits ? parseInt(c.credits) : null })),
+      }),
+    })
+    if (!res.ok) {
+      const d = await res.json()
+      throw new Error(d.error || 'Failed to update listing')
+    }
+    setShowEditModal(false)
+    showToast('Listing updated successfully!')
+    fetchListing()
   }
 
   if (loading) {
@@ -139,11 +168,16 @@ export default function ListingDetailClient({ listingId }: { listingId: string }
               {showMatches ? 'Hide Matches' : 'Find Matches'}
             </button>
             <button
-              onClick={handleCancel}
-              disabled={cancelling}
+              onClick={() => setShowEditModal(true)}
+              className="btn btn-secondary"
+            >
+              Edit Listing
+            </button>
+            <button
+              onClick={() => setConfirmCancel(true)}
               className="btn btn-secondary text-red-600 hover:text-red-700"
             >
-              {cancelling ? 'Cancelling...' : 'Cancel Listing'}
+              Cancel Listing
             </button>
           </div>
         )}
@@ -163,6 +197,50 @@ export default function ListingDetailClient({ listingId }: { listingId: string }
           <MatchingListings listingId={listingId} />
         </div>
       )}
+
+      {/* Edit Listing Modal */}
+      {listing && (
+        <Modal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          title="Edit Listing"
+          size="lg"
+        >
+          <ListingForm
+            initialNotes={listing.notes || ''}
+            initialHaveCourses={listing.haveCourses.map((c) => ({
+              courseName: c.courseName,
+              courseCode: c.courseCode,
+              classCode: c.classCode || '',
+              section: c.section || '',
+              schedule: c.schedule || '',
+              credits: c.credits?.toString() || '',
+            }))}
+            initialWantCourses={listing.wantCourses.map((c) => ({
+              courseName: c.courseName,
+              courseCode: c.courseCode,
+              classCode: c.classCode || '',
+              section: c.section || '',
+              schedule: c.schedule || '',
+              credits: c.credits?.toString() || '',
+            }))}
+            onSubmit={handleEdit}
+            submitLabel="Save Changes"
+          />
+        </Modal>
+      )}
+
+      {/* Confirm Cancel Modal */}
+      <ConfirmModal
+        isOpen={confirmCancel}
+        onClose={() => setConfirmCancel(false)}
+        onConfirm={handleCancel}
+        title="Cancel Listing"
+        message="This will cancel your listing and it cannot be undone. Any pending matches will also be affected."
+        confirmLabel="Cancel Listing"
+        confirmVariant="danger"
+        loading={cancelling}
+      />
     </div>
   )
 }
