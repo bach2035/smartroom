@@ -21,7 +21,7 @@ export default async function MapPage() {
           </div>
         </div>
 
-        {/* Room search */}
+        {/* Room search section */}
         <RoomSearch />
       </div>
     </div>
