@@ -9,6 +9,8 @@ interface RoomData {
   room_number: string
   capacity: number
   description: string | null
+  image_url: string | null
+  image_position: string | null
   is_active: boolean
   floor_id: string
   floor: {
@@ -39,6 +41,8 @@ export async function GET() {
         room_number,
         capacity,
         description,
+        image_url,
+        image_position,
         is_active,
         floor_id,
         floor:floors(
@@ -65,6 +69,8 @@ export async function GET() {
         roomNumber: room.room_number,
         capacity: room.capacity,
         description: room.description,
+        imageUrl: room.image_url,
+        imagePosition: room.image_position,
         isActive: room.is_active,
         floor: room.floor?.name,
         building: room.floor?.building?.name,
@@ -95,7 +101,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const { name, roomNumber, capacity, description, floorId, svgElementId } = await request.json()
+    const { name, roomNumber, capacity, description, floorId, svgElementId, imageUrl } = await request.json()
 
     if (!name || !roomNumber || !capacity || !floorId || !svgElementId) {
       return NextResponse.json(
@@ -121,6 +127,7 @@ export async function POST(request: NextRequest) {
         room_number: roomNumber,
         capacity,
         description,
+        image_url: imageUrl || null,
         floor_id: floorId,
         svg_element_id: svgElementId,
       })

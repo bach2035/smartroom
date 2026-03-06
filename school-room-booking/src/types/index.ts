@@ -33,6 +33,8 @@ export interface Room {
   roomNumber: string
   capacity: number
   description: string | null
+  imageUrl: string | null
+  imagePosition: string | null
   svgElementId: string
   floorId: string
   isActive: boolean

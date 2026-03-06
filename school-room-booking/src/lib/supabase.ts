@@ -59,6 +59,8 @@ export interface Room {
   room_number: string
   capacity: number
   description: string | null
+  image_url: string | null
+  image_position: string | null
   svg_element_id: string
   floor_id: string
   is_active: boolean

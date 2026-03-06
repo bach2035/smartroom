@@ -47,6 +47,11 @@ export async function GET(
 
     const typedBookings = bookings as unknown as BookingData[]
 
+    // Check if the requested date is today (GMT+7)
+    const nowGMT7 = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }))
+    const todayStr = `${nowGMT7.getFullYear()}-${(nowGMT7.getMonth() + 1).toString().padStart(2, '0')}-${nowGMT7.getDate().toString().padStart(2, '0')}`
+    const isToday = date === todayStr
+
     // Generate 30-minute time slots from 7:00 to 22:00
     const slots = []
     for (let hour = 7; hour < 22; hour++) {
@@ -58,10 +63,14 @@ export async function GET(
           (b) => new Date(b.start_time) <= slotStart && new Date(b.end_time) > slotStart
         )
 
+        // Mark past slots as unavailable if the date is today
+        const isPast = isToday && slotStart.getTime() < Date.now()
+
         slots.push({
           startTime: slotStart.toISOString(),
           endTime: slotEnd.toISOString(),
-          isAvailable: !booking,
+          isAvailable: !booking && !isPast,
+          isPast,
           booking: booking
             ? {
                 id: booking.id,

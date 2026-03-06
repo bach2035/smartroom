@@ -13,6 +13,7 @@ interface TimeSlot {
   startTime: string
   endTime: string
   isAvailable: boolean
+  isPast?: boolean
   booking: {
     id: string
     title: string

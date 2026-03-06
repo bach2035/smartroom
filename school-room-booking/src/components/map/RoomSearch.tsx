@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useMapStore } from '@/store/mapStore'
-import { getTodayString } from '@/lib/utils'
+import { getTodayString, getNextSlotTime } from '@/lib/utils'
 import Button from '@/components/ui/Button'
 import RoomResultCard from '@/components/map/RoomResultCard'
 
@@ -11,6 +11,20 @@ export default function RoomSearch() {
   const [loading, setLoading] = useState(false)
 
   const today = getTodayString()
+  const isToday = selectedDate === today
+  const minStartTime = isToday ? getNextSlotTime() : '07:00'
+
+  // Auto-adjust startTime if it's in the past for today
+  useEffect(() => {
+    if (isToday && startTime < minStartTime) {
+      setStartTime(minStartTime)
+      if (endTime <= minStartTime) {
+        const [h, m] = minStartTime.split(':').map(Number)
+        const newEnd = m === 30 ? `${(h + 1).toString().padStart(2, '0')}:00` : `${h.toString().padStart(2, '0')}:30`
+        setEndTime(newEnd > '22:00' ? '22:00' : newEnd)
+      }
+    }
+  }, [selectedDate]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchRooms = useCallback(async () => {
     setLoading(true)
@@ -105,7 +119,7 @@ export default function RoomSearch() {
               type="time"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
-              min="07:00"
+              min={minStartTime}
               max="21:00"
               step={1800}
               className="px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 bg-slate-50 hover:bg-white transition-colors"

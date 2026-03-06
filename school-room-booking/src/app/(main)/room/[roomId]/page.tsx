@@ -23,6 +23,8 @@ export default async function RoomPage({ params }: Props) {
       room_number,
       capacity,
       description,
+      image_url,
+      image_position,
       floor:floors(
         id,
         name,
@@ -53,6 +55,8 @@ export default async function RoomPage({ params }: Props) {
     room_number: string
     capacity: number
     description: string | null
+    image_url: string | null
+    image_position: string | null
     floor: {
       id: string
       name: string
@@ -115,18 +119,32 @@ export default async function RoomPage({ params }: Props) {
           <div className="lg:col-span-2 space-y-6">
             {/* Room header card */}
             <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-              {/* Header with gradient */}
-              <div className="h-32 bg-gradient-to-br from-red-500 via-red-700 to-red-800 relative">
-                <div className="absolute inset-0 opacity-10">
-                  <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                      <pattern id="room-grid" width="30" height="30" patternUnits="userSpaceOnUse">
-                        <path d="M 30 0 L 0 0 0 30" fill="none" stroke="white" strokeWidth="1"/>
-                      </pattern>
-                    </defs>
-                    <rect width="100%" height="100%" fill="url(#room-grid)" />
-                  </svg>
-                </div>
+              {/* Header with room image or gradient fallback */}
+              <div className="h-48 relative">
+                {roomData.image_url ? (
+                  <>
+                    <img
+                      src={roomData.image_url}
+                      alt={roomData.name}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      style={{ objectPosition: roomData.image_position || 'center 50%' }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+                  </>
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-red-500 via-red-700 to-red-800">
+                    <div className="absolute inset-0 opacity-10">
+                      <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                          <pattern id="room-grid" width="30" height="30" patternUnits="userSpaceOnUse">
+                            <path d="M 30 0 L 0 0 0 30" fill="none" stroke="white" strokeWidth="1"/>
+                          </pattern>
+                        </defs>
+                        <rect width="100%" height="100%" fill="url(#room-grid)" />
+                      </svg>
+                    </div>
+                  </div>
+                )}
                 <div className="absolute bottom-4 left-6 right-6">
                   <div className="flex items-end justify-between">
                     <div>

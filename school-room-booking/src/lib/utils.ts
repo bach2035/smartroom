@@ -70,6 +70,26 @@ export function isTimeInRange(
   return time >= startTime && time < endTime
 }
 
+/** Get current time as HH:mm in GMT+7 */
+export function getCurrentTimeGMT7(): string {
+  const now = new Date()
+  return now.toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: TZ,
+  })
+}
+
+/** Round up to the next 30-min slot boundary. e.g. 14:05 → 14:30, 14:30 → 14:30, 14:31 → 15:00 */
+export function getNextSlotTime(time: string = getCurrentTimeGMT7()): string {
+  const [h, m] = time.split(':').map(Number)
+  let nextM = m <= 0 ? 0 : m <= 30 ? 30 : 60
+  let nextH = h
+  if (nextM === 60) { nextH++; nextM = 0 }
+  if (nextH >= 22) return '22:00'
+  return `${nextH.toString().padStart(2, '0')}:${nextM.toString().padStart(2, '0')}`
+}
+
 export function getDateString(date: Date = new Date()): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(date)
 }

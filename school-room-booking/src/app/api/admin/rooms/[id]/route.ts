@@ -15,7 +15,7 @@ export async function PUT(
     }
 
     const { id } = await params
-    const { name, roomNumber, capacity, description, isActive } = await request.json()
+    const { name, roomNumber, capacity, description, isActive, imageUrl } = await request.json()
 
     const { data: room } = await supabaseAdmin
       .from('rooms')
@@ -34,6 +34,7 @@ export async function PUT(
         room_number: roomNumber,
         capacity,
         description,
+        image_url: imageUrl,
         is_active: isActive,
         updated_at: new Date().toISOString(),
       })

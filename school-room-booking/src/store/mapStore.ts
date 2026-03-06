@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { getTodayString } from '@/lib/utils'
+import { getTodayString, getNextSlotTime } from '@/lib/utils'
 
 interface AvailableRoom {
   id: string
@@ -35,10 +35,12 @@ interface MapState {
 }
 
 const today = getTodayString()
+const nextSlot = getNextSlotTime()
+const initialStart = nextSlot > '08:00' && nextSlot < '22:00' ? nextSlot : '08:00'
 
 export const useMapStore = create<MapState>((set) => ({
   selectedDate: today,
-  startTime: '08:00',
+  startTime: initialStart,
   endTime: '18:00',
   selectedRoomId: null,
   searchResult: null,
@@ -52,7 +54,7 @@ export const useMapStore = create<MapState>((set) => ({
   resetFilters: () =>
     set({
       selectedDate: today,
-      startTime: '08:00',
+      startTime: initialStart,
       endTime: '18:00',
       selectedRoomId: null,
       searchResult: null,

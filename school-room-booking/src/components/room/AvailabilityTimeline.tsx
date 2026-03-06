@@ -4,6 +4,7 @@ interface TimeSlot {
   startTime: string
   endTime: string
   isAvailable: boolean
+  isPast?: boolean
   booking: {
     id: string
     title: string
@@ -57,13 +58,17 @@ export default function AvailabilityTimeline({
                 ${
                   selected
                     ? 'bg-red-500 text-white'
+                    : slot.isPast
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed line-through'
                     : slot.isAvailable
                     ? 'bg-green-100 hover:bg-green-200 text-green-700'
                     : 'bg-red-100 text-red-700 cursor-not-allowed'
                 }
               `}
               title={
-                slot.booking
+                slot.isPast
+                  ? 'Past'
+                  : slot.booking
                   ? `${slot.booking.title} - ${slot.booking.userName}`
                   : 'Available'
               }
