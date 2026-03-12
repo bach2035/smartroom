@@ -96,37 +96,34 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Fire-and-forget: notify admins of new booking request
+    // Notify admins of new booking request (awaited to ensure delivery on Railway)
     const roomData = booking.room as unknown as { name: string; room_number: string }
-    supabaseAdmin
+    const { data: admins } = await supabaseAdmin
       .from('users')
       .select('id, email')
       .eq('role', 'ADMIN')
-      .then(({ data: admins }) => {
-        if (admins && admins.length > 0) {
-          sendBookingRequestEmail(
-            admins.map((a) => a.email),
-            {
-              bookingTitle: booking.title,
-              roomName: roomData.name,
-              roomNumber: roomData.room_number,
-              startTime: booking.start_time,
-              endTime: booking.end_time,
-              studentName: session.user.name || session.user.username || 'Unknown',
-            }
-          )
-          // In-app notification for each admin
-          for (const admin of admins) {
-            createNotification({
-              userId: admin.id,
-              type: 'BOOKING_SUBMITTED',
-              title: 'New booking request',
-              message: `${session.user.name || 'A student'} requested to book ${roomData.name} (${roomData.room_number}) — "${booking.title}"`,
-              link: `/admin`,
-            })
-          }
+    if (admins && admins.length > 0) {
+      await sendBookingRequestEmail(
+        admins.map((a) => a.email),
+        {
+          bookingTitle: booking.title,
+          roomName: roomData.name,
+          roomNumber: roomData.room_number,
+          startTime: booking.start_time,
+          endTime: booking.end_time,
+          studentName: session.user.name || session.user.username || 'Unknown',
         }
-      })
+      )
+      for (const admin of admins) {
+        await createNotification({
+          userId: admin.id,
+          type: 'BOOKING_SUBMITTED',
+          title: 'New booking request',
+          message: `${session.user.name || 'A student'} requested to book ${roomData.name} (${roomData.room_number}) — "${booking.title}"`,
+          link: `/admin`,
+        })
+      }
+    }
 
     return NextResponse.json(
       {

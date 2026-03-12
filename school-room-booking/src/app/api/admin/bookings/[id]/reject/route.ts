@@ -51,12 +51,13 @@ export async function PATCH(
 
     if (error) throw error
 
-    // Fire-and-forget: notify student of rejection
-    Promise.all([
+    // Notify student of rejection (awaited to ensure delivery on Railway)
+    const [{ data: student }, { data: room }] = await Promise.all([
       supabaseAdmin.from('users').select('email, full_name').eq('id', booking.user_id).single(),
       supabaseAdmin.from('rooms').select('name, room_number').eq('id', booking.room_id).single(),
-    ]).then(([{ data: student }, { data: room }]) => {
-      if (student && room) {
+    ])
+    if (student && room) {
+      await Promise.all([
         sendBookingRejectedEmail(student.email, {
           bookingTitle: booking.title,
           roomName: room.name,
@@ -64,16 +65,16 @@ export async function PATCH(
           startTime: booking.start_time,
           endTime: booking.end_time,
           studentName: student.full_name,
-        }, reason)
+        }, reason),
         createNotification({
           userId: booking.user_id,
           type: 'BOOKING_REJECTED',
           title: 'Booking rejected',
           message: `Your booking "${booking.title}" for ${room.name} (${room.room_number}) was rejected.${reason ? ` Reason: ${reason}` : ''}`,
           link: `/bookings`,
-        })
-      }
-    })
+        }),
+      ])
+    }
 
     return NextResponse.json({
       message: 'Booking rejected',
